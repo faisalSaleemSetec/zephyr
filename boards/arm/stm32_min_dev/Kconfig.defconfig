@@ -1,9 +1,7 @@
-# Kconfig - STM32 Minimum Development Board Configuration
-#
+# STM32 Minimum Development Board Configuration
+
 # Copyright (c) 2017, embedjournal.com
-#
 # SPDX-License-Identifier: Apache-2.0
-#
 
 if BOARD_STM32_MIN_DEV_BLUE || BOARD_STM32_MIN_DEV_BLACK
 
@@ -21,6 +19,9 @@ endif # UART_CONSOLE
 if I2C
 
 config I2C_1
+	default y
+
+config I2C_2
 	default y
 
 endif # I2C

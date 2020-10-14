@@ -1,85 +1,76 @@
 /*
- * Copyright (c) 2016 Wind River Systems, Inc.
- * Copyright (c) 2018 Intel Corporation
- *
+ * Copyright (c) 2019 Intel Corporation
  * SPDX-License-Identifier: Apache-2.0
  */
-
-/* this file is only meant to be included by kernel_structs.h */
 
 #ifndef ZEPHYR_ARCH_X86_INCLUDE_KERNEL_ARCH_FUNC_H_
 #define ZEPHYR_ARCH_X86_INCLUDE_KERNEL_ARCH_FUNC_H_
 
-#ifndef _ASMLANGUAGE
+#include <kernel_arch_data.h>
 
-#ifdef __cplusplus
-extern "C" {
+#ifdef CONFIG_X86_64
+#include <intel64/kernel_arch_func.h>
+#else
+#include <ia32/kernel_arch_func.h>
 #endif
 
-/* stack alignment related macros: STACK_ALIGN_SIZE is defined above */
+#ifndef _ASMLANGUAGE
+static inline bool arch_is_in_isr(void)
+{
+#ifdef CONFIG_SMP
+	return arch_curr_cpu()->nested != 0;
+#else
+	return _kernel.nested != 0U;
+#endif
+}
 
-#define STACK_ROUND_UP(x) ROUND_UP(x, STACK_ALIGN_SIZE)
-#define STACK_ROUND_DOWN(x) ROUND_DOWN(x, STACK_ALIGN_SIZE)
+/* stack alignment related macros: STACK_ALIGN is defined in arch.h */
+#define STACK_ROUND_UP(x) ROUND_UP(x, STACK_ALIGN)
+#define STACK_ROUND_DOWN(x) ROUND_DOWN(x, STACK_ALIGN)
 
 extern K_THREAD_STACK_DEFINE(_interrupt_stack, CONFIG_ISR_STACK_SIZE);
+extern K_THREAD_STACK_DEFINE(_interrupt_stack1, CONFIG_ISR_STACK_SIZE);
+extern K_THREAD_STACK_DEFINE(_interrupt_stack2, CONFIG_ISR_STACK_SIZE);
+extern K_THREAD_STACK_DEFINE(_interrupt_stack3, CONFIG_ISR_STACK_SIZE);
 
-/**
- *
- * @brief Performs architecture-specific initialization
- *
- * This routine performs architecture-specific initialization of the kernel.
- * Trivial stuff is done inline; more complex initialization is done via
- * function calls.
- *
- * @return N/A
+struct multiboot_info;
+
+extern FUNC_NORETURN void z_x86_prep_c(int dummy, struct multiboot_info *info);
+
+#ifdef CONFIG_X86_VERY_EARLY_CONSOLE
+/* Setup ultra-minimal serial driver for printk() */
+void z_x86_early_serial_init(void);
+#endif /* CONFIG_X86_VERY_EARLY_CONSOLE */
+
+#ifdef CONFIG_X86_MMU
+/* Create all page tables with boot configuration and enable paging */
+void z_x86_paging_init(void);
+#endif /* CONFIG_X86_MMU */
+
+/* Called upon unrecoverable error; dump registers and transfer control to
+ * kernel via z_fatal_error()
  */
-static inline void kernel_arch_init(void)
-{
-	_kernel.nested = 0;
-	_kernel.irq_stack = Z_THREAD_STACK_BUFFER(_interrupt_stack) +
-				CONFIG_ISR_STACK_SIZE;
-#if CONFIG_X86_STACK_PROTECTION
-	z_x86_mmu_set_flags(&z_x86_kernel_pdpt, _interrupt_stack, MMU_PAGE_SIZE,
-			   MMU_ENTRY_NOT_PRESENT, MMU_PTE_P_MASK);
-#endif
-}
+FUNC_NORETURN void z_x86_fatal_error(unsigned int reason,
+				     const z_arch_esf_t *esf);
 
+/* Common handling for page fault exceptions */
+void z_x86_page_fault_handler(z_arch_esf_t *esf);
+
+#ifdef CONFIG_THREAD_STACK_INFO
 /**
+ * @brief Check if a memory address range falls within the stack
  *
- * @brief Set the return value for the specified thread (inline)
+ * Given a memory address range, ensure that it falls within the bounds
+ * of the faulting context's stack.
  *
- * @param thread pointer to thread
- * @param value value to set as return value
- *
- * The register used to store the return value from a function call invocation
- * is set to @a value.  It is assumed that the specified @a thread is pending, and
- * thus the threads context is stored in its TCS.
- *
- * @return N/A
+ * @param addr Starting address
+ * @param size Size of the region, or 0 if we just want to see if addr is
+ *             in bounds
+ * @param cs Code segment of faulting context
+ * @return true if addr/size region is not within the thread stack
  */
-static ALWAYS_INLINE void
-z_set_thread_return_value(struct k_thread *thread, unsigned int value)
-{
-	/* write into 'eax' slot created in z_swap() entry */
-
-	*(unsigned int *)(thread->callee_saved.esp) = value;
-}
-
-extern void k_cpu_atomic_idle(unsigned int key);
-
-extern FUNC_NORETURN void z_x86_userspace_enter(k_thread_entry_t user_entry,
-					       void *p1, void *p2, void *p3,
-					       u32_t stack_end,
-					       u32_t stack_start);
-
-#include <stddef.h> /* For size_t */
-
-#ifdef __cplusplus
-}
-#endif
-
-#define z_is_in_isr() (_kernel.nested != 0U)
-
-#endif /* _ASMLANGUAGE */
+bool z_x86_check_stack_bounds(uintptr_t addr, size_t size, u16_t cs);
+#endif /* CONFIG_THREAD_STACK_INFO */
+#endif /* !_ASMLANGUAGE */
 
 #endif /* ZEPHYR_ARCH_X86_INCLUDE_KERNEL_ARCH_FUNC_H_ */

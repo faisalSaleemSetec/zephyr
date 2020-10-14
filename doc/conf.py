@@ -14,7 +14,6 @@
 
 import sys
 import os
-from subprocess import CalledProcessError, check_output, DEVNULL
 
 if "ZEPHYR_BASE" not in os.environ:
     sys.exit("$ZEPHYR_BASE environment variable undefined.")
@@ -32,22 +31,10 @@ sys.path.insert(0, os.path.join(ZEPHYR_BASE, 'doc', 'extensions'))
 # for autodoc directives on runners.xyz.
 sys.path.insert(0, os.path.join(ZEPHYR_BASE, 'scripts', 'west_commands'))
 
-west_found = False
-
 try:
-    desc = check_output(['west', 'list', '-f{abspath}', 'west'],
-			stderr=DEVNULL,
-			cwd=os.path.dirname(__file__))
-    west_path = desc.decode(sys.getdefaultencoding()).strip()
-    # Add west, to be able to pull in its API docs.
-    sys.path.append(os.path.join(west_path, 'src'))
-    west_found = True
-except FileNotFoundError as e:
-    # west not installed
-    pass
-except CalledProcessError as e:
-    # west not able to list itself
-    pass
+    import west as west_found
+except ImportError:
+    west_found = False
 
 # -- General configuration ------------------------------------------------
 
@@ -64,11 +51,12 @@ extensions = [
     'zephyr.application',
     'zephyr.html_redirects',
     'only.eager_only',
-    'zephyr.link-roles'
+    'zephyr.link-roles',
+    'sphinx_tabs.tabs'
 ]
 
 # Only use SVG converter when it is really needed, e.g. LaTeX.
-if tags.has("svgconvert"):
+if tags.has("svgconvert"):  # pylint: disable=undefined-variable
     extensions.append('sphinxcontrib.rsvgconverter')
 
 # Add any paths that contain templates here, relative to this directory.
@@ -109,7 +97,7 @@ try:
             extraversion = val
         if version_major and version_minor and patchlevel and extraversion:
             break
-except:
+except Exception:
     pass
 finally:
     if version_major and version_minor and patchlevel and extraversion is not None:
@@ -190,8 +178,11 @@ rst_epilog = """
 import sphinx_rtd_theme
 html_theme = "sphinx_rtd_theme"
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+html_theme_options = {
+    'prev_next_buttons_location': None
+}
 
-if tags.has('release'):
+if tags.has('release'):  # pylint: disable=undefined-variable
     is_release = True
     docs_title = 'Docs / %s' %(version)
 else:
@@ -292,10 +283,13 @@ sourcelink_suffix = '.txt'
 htmlhelp_basename = 'zephyrdoc'
 
 
-# Custom added feature to allow redirecting old URLs
+# Custom added feature to allow redirecting old URLs (caused by
+# reorganizing doc directories)
 #
 # list of tuples (old_url, new_url) for pages to redirect
-# (URLs should be relative to document root, only)
+#
+# URLs must be relative to document root (with NO leading slash),
+# and without the html extension)
 html_redirect_pages = [
         ('contribute/contribute_guidelines', 'contribute/index'),
         ('application/application', 'application/index.rst'),
@@ -303,13 +297,12 @@ html_redirect_pages = [
         ('boards/boards', 'boards/index'),
         ('samples/samples', 'samples/index'),
         ('releases/release-notes', 'releases/index'),
-        ('getting_started/getting_starting', 'getting_started/index'),
+        ('getting_started/getting_started', 'getting_started/index'),
         ('introduction/introducing_zephyr', 'introduction/index'),
         ('api/index', 'reference/index'),
         ('api/api', 'reference/index'),
         ('subsystems/subsystems', 'reference/index'),
         ('kernel/kernel', 'reference/kernel/index'),
-		('boards/arc/arduino_101_sss/doc/board', 'boards/arc/arduino_101_sss/doc/index'),
 		('boards/arc/em_starterkit/doc/board', 'boards/arc/em_starterkit/doc/index'),
 		('boards/arc/nsim_em/doc/board', 'boards/arc/nsim_em/doc/index'),
 		('boards/arm/96b_argonkey/doc/96b_argonkey', 'boards/arm/96b_argonkey/doc/index'),
@@ -326,7 +319,6 @@ html_redirect_pages = [
 		('boards/arm/cc2650_sensortag/doc/cc2650_sensortag', 'boards/arm/cc2650_sensortag/doc/index'),
 		('boards/arm/cc3220sf_launchxl/doc/cc3220sf_launchxl', 'boards/arm/cc3220sf_launchxl/doc/index'),
 		('boards/arm/colibri_imx7d_m4/doc/colibri_imx7d_m4', 'boards/arm/colibri_imx7d_m4/doc/index'),
-		('boards/arm/curie_ble/doc/board', 'boards/arm/curie_ble/doc/index'),
 		('boards/arm/disco_l475_iot1/doc/disco_l475_iot1', 'boards/arm/disco_l475_iot1/doc/index'),
 		('boards/arm/dragino_lsn50/doc/dragino_lsn50', 'boards/arm/dragino_lsn50/doc/index'),
 		('boards/arm/efm32wg_stk3800/doc/efm32wg_stk3800', 'boards/arm/efm32wg_stk3800/doc/index'),
@@ -338,7 +330,10 @@ html_redirect_pages = [
 		('boards/arm/hexiwear_kw40z/doc/hexiwear_kw40z', 'boards/arm/hexiwear_kw40z/doc/index'),
 		('boards/arm/lpcxpresso54114_m0/doc/lpcxpresso54114_m0', 'boards/arm/lpcxpresso54114_m0/doc/index'),
 		('boards/arm/lpcxpresso54114_m4/doc/lpcxpresso54114', 'boards/arm/lpcxpresso54114_m4/doc/index'),
+		('boards/arm/mimxrt1020_evk/doc/mimxrt1020_evk', 'boards/arm/mimxrt1020_evk/doc/index'),
 		('boards/arm/mimxrt1050_evk/doc/mimxrt1050_evk', 'boards/arm/mimxrt1050_evk/doc/index'),
+		('boards/arm/mimxrt1060_evk/doc/mimxrt1060_evk', 'boards/arm/mimxrt1060_evk/doc/index'),
+		('boards/arm/mimxrt1064_evk/doc/mimxrt1064_evk', 'boards/arm/mimxrt1064_evk/doc/index'),
 		('boards/arm/mps2_an385/doc/mps2_an385', 'boards/arm/mps2_an385/doc/index'),
 		('boards/arm/msp_exp432p401r_launchxl/doc/msp_exp432p401r_launchxl', 'boards/arm/msp_exp432p401r_launchxl/doc/index'),
 		('boards/arm/nrf51_ble400/doc/nrf51_ble400', 'boards/arm/nrf51_ble400/doc/index'),
@@ -401,10 +396,16 @@ html_redirect_pages = [
 		('boards/nios2/altera_max10/doc/board', 'boards/nios2/altera_max10/doc/index'),
 		('boards/nios2/qemu_nios2/doc/board', 'boards/nios2/qemu_nios2/doc/index'),
 		('boards/posix/native_posix/doc/board', 'boards/posix/native_posix/doc/index'),
-		('boards/riscv32/hifive1/doc/hifive1', 'boards/riscv32/hifive1/doc/index'),
-		('boards/riscv32/m2gl025_miv/doc/m2g1025_miv', 'boards/riscv32/m2gl025_miv/doc/index'),
-		('boards/riscv32/qemu_riscv32/doc/board', 'boards/riscv32/qemu_riscv32/doc/index'),
-		('boards/riscv32/zedboard_pulpino/doc/zedboard_pulpino', 'boards/riscv32/zedboard_pulpino/doc/index'),
+		('boards/riscv/hifive1/doc/hifive1', 'boards/riscv/hifive1/doc/index'),
+		('boards/riscv/m2gl025_miv/doc/m2g1025_miv', 'boards/riscv/m2gl025_miv/doc/index'),
+		('boards/riscv/qemu_riscv32/doc/board', 'boards/riscv/qemu_riscv32/doc/index'),
+		('boards/riscv/zedboard_pulpino/doc/zedboard_pulpino', 'boards/riscv/zedboard_pulpino/doc/index'),
+                ('boards/riscv/hifive1/doc/index', 'boards/riscv/hifive1/doc/index'),
+                ('boards/riscv/hifive1_revb/doc/index', 'boards/riscv/hifive1_revb/doc/index'),
+                ('boards/riscv/litex_vexriscv/doc/litex_vexriscv', 'boards/riscv/litex_vexriscv/doc/litex_vexriscv'),
+                ('boards/riscv/m2gl025_miv/doc/index', 'boards/riscv/m2gl025_miv/doc/index'),
+                ('boards/riscv/qemu_riscv32/doc/index', 'boards/riscv/qemu_riscv32/doc/index'),
+                ('boards/riscv/rv32m1_vega/doc/index', 'boards/riscv/rv32m1_vega/doc/index'),
 		('boards/x86/arduino_101/doc/board', 'boards/x86/arduino_101/doc/index'),
 		('boards/x86/galileo/doc/galileo', 'boards/x86/galileo/doc/index'),
 		('boards/x86/minnowboard/doc/minnowboard', 'boards/x86/minnowboard/doc/index'),
@@ -515,7 +516,7 @@ breathe_default_project = "Zephyr"
 # Error when parsing function declaration and more.  This is a list
 # of strings that the parser additionally should accept as
 # attributes.
-cpp_id_attributes = ['__syscall', '__syscall_inline', '__deprecated',
+cpp_id_attributes = ['__syscall', '__deprecated',
     '__may_alias', '__used', '__unused', '__weak',
     '__DEPRECATED_MACRO', 'FUNC_NORETURN']
 
@@ -526,12 +527,13 @@ html_context = {
     'is_release': is_release,
     'theme_logo_only': False,
     'current_version': version,
-    'versions': ( ("latest", "/"),
-                 ("1.14.0", "/1.14.0/"),
+    'versions': (("latest", "/"),
+                 ("2.1.0", "/2.1.0/"),
+                 ("2.0.0", "/2.0.0/"),
+                 ("1.14.1", "/1.14.1/"),
                  ("1.13.0", "/1.13.0/"),
                  ("1.12.0", "/1.12.0/"),
                  ("1.11.0", "/1.11.0/"),
-                 ("1.10.0", "/1.10.0/"),
                 )
 }
 

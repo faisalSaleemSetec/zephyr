@@ -6,7 +6,7 @@
 
 #include <zephyr.h>
 #include <ztest.h>
-#include <fs.h>
+#include <fs/fs.h>
 
 #define FATFS_MNTP	"/RAM:"
 #define TEST_FILE	FATFS_MNTP"/testfile.txt"
@@ -27,4 +27,3 @@ void test_fat_unlink(void);
 void test_fat_mkdir(void);
 void test_fat_readdir(void);
 void test_fat_rmdir(void);
-

@@ -42,11 +42,11 @@
 #include <kernel.h>
 #include <stdio.h>
 #include <errno.h>
-#include <flash.h>
-#include <flash_map.h>
+#include <drivers/flash.h>
+#include <storage/flash_map.h>
 #include <dfu/mcuboot.h>
 #include <dfu/flash_img.h>
-#include <misc/byteorder.h>
+#include <sys/byteorder.h>
 #include <usb/usb_device.h>
 #include <usb/usb_common.h>
 #include <usb/class/usb_dfu.h>
@@ -290,7 +290,6 @@ struct dfu_data_t {
 	/* Number of bytes sent during upload */
 	u32_t bytes_sent;
 	u32_t alt_setting;              /* DFU alternate setting */
-	u8_t buffer[USB_DFU_MAX_XFER_SIZE]; /* DFU data buffer */
 	struct flash_img_context ctx;
 	enum dfu_state state;              /* State of the DFU device */
 	enum dfu_status status;            /* Status of the DFU device */
@@ -521,7 +520,7 @@ static int dfu_class_handle_req(struct usb_setup_packet *pSetup,
 					break;
 				}
 				ret = flash_area_read(fa, dfu_data.bytes_sent,
-						      dfu_data.buffer, len);
+						      *data, len);
 				flash_area_close(fa);
 				if (ret) {
 					dfu_data.state = dfuERROR;
@@ -698,7 +697,7 @@ static void dfu_interface_config(struct usb_desc_header *head,
 }
 
 /* Configuration of the DFU Device send to the USB Driver */
-USBD_CFG_DATA_DEFINE(dfu) struct usb_cfg_data dfu_config = {
+USBD_CFG_DATA_DEFINE(primary, dfu) struct usb_cfg_data dfu_config = {
 	.usb_device_description = NULL,
 	.interface_config = dfu_interface_config,
 	.interface_descriptor = &dfu_cfg.if0,
@@ -714,7 +713,7 @@ USBD_CFG_DATA_DEFINE(dfu) struct usb_cfg_data dfu_config = {
  * Dummy configuration, this is necessary to configure DFU mode descriptor
  * which is an alternative (secondary) device descriptor.
  */
-USBD_CFG_DATA_DEFINE(dfu_mode) struct usb_cfg_data dfu_mode_config = {
+USBD_CFG_DATA_DEFINE(secondary, dfu) struct usb_cfg_data dfu_mode_config = {
 	.usb_device_description = NULL,
 	.interface_config = NULL,
 	.interface_descriptor = &dfu_mode_desc.sec_dfu_cfg.if0,

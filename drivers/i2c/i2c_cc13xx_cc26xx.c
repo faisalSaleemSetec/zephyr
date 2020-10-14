@@ -5,7 +5,7 @@
  */
 
 #include <kernel.h>
-#include <i2c.h>
+#include <drivers/i2c.h>
 
 #define LOG_LEVEL CONFIG_I2C_LOG_LEVEL
 #include <logging/log.h>
@@ -248,7 +248,7 @@ static int i2c_cc13xx_cc26xx_configure(struct device *dev, u32_t dev_config)
 
 	/* Enables and configures I2C master */
 	I2CMasterInitExpClk(get_dev_config(dev)->base,
-			    sys_clock_hw_cycles_per_sec(), fast);
+		DT_CPU_CLOCK_FREQUENCY, fast);
 
 	return 0;
 }

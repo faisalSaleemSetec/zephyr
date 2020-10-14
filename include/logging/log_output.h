@@ -7,6 +7,8 @@
 #define ZEPHYR_INCLUDE_LOGGING_LOG_OUTPUT_H_
 
 #include <logging/log_msg.h>
+#include <sys/util.h>
+#include <stdarg.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,6 +44,10 @@ extern "C" {
 /** @brief Flag forcing syslog format specified in RFC 5424
  */
 #define LOG_OUTPUT_FLAG_FORMAT_SYSLOG		BIT(6)
+
+/** @brief Flag forcing syslog format specified in mipi sys-t
+ */
+#define LOG_OUTPUT_FLAG_FORMAT_SYST		BIT(7)
 
 /**
  * @brief Prototype of the function processing output data.

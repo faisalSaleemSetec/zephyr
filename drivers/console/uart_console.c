@@ -23,13 +23,13 @@
 #include <device.h>
 #include <init.h>
 
-#include <uart.h>
+#include <drivers/uart.h>
 #include <drivers/console/console.h>
 #include <drivers/console/uart_console.h>
 #include <toolchain.h>
 #include <linker/sections.h>
-#include <atomic.h>
-#include <misc/printk.h>
+#include <sys/atomic.h>
+#include <sys/printk.h>
 #ifdef CONFIG_UART_CONSOLE_MCUMGR
 #include "mgmt/serial.h"
 #endif
@@ -599,7 +599,7 @@ static int uart_console_init(struct device *arg)
 	while (1) {
 		u32_t dtr = 0U;
 
-		uart_line_ctrl_get(uart_console_dev, LINE_CTRL_DTR, &dtr);
+		uart_line_ctrl_get(uart_console_dev, UART_LINE_CTRL_DTR, &dtr);
 		if (dtr) {
 			break;
 		}

@@ -28,7 +28,13 @@ static void test_queue_alloc_append_user(void)
 	ztest_test_skip();
 }
 #endif
-K_MEM_POOL_DEFINE(test_pool, 16, 96, 4, 4);
+
+#ifdef CONFIG_64BIT
+#define MAX_SZ	128
+#else
+#define MAX_SZ	96
+#endif
+K_MEM_POOL_DEFINE(test_pool, 16, MAX_SZ, 4, 4);
 
 /*test case main entry*/
 void test_main(void)
@@ -40,12 +46,12 @@ void test_main(void)
 			 ztest_user_unit_test(test_queue_alloc_prepend_user),
 			 ztest_user_unit_test(test_queue_alloc_append_user),
 			 ztest_unit_test(test_auto_free),
-			 ztest_unit_test(test_queue_thread2thread),
+			 ztest_1cpu_unit_test(test_queue_thread2thread),
 			 ztest_unit_test(test_queue_thread2isr),
 			 ztest_unit_test(test_queue_isr2thread),
-			 ztest_unit_test(test_queue_get_2threads),
-			 ztest_unit_test(test_queue_get_fail),
-			 ztest_unit_test(test_queue_loop),
+			 ztest_1cpu_unit_test(test_queue_get_2threads),
+			 ztest_1cpu_unit_test(test_queue_get_fail),
+			 ztest_1cpu_unit_test(test_queue_loop),
 			 ztest_unit_test(test_queue_alloc));
 	ztest_run_test_suite(queue_api);
 }

@@ -31,9 +31,9 @@
 #include <zephyr.h>
 #include <kernel.h>
 #include <cmsis_os2.h>
-#include <misc/printk.h>
+#include <sys/printk.h>
 
-#include <misc/__assert.h>
+#include <sys/__assert.h>
 
 #include "phil_obj_abstract.h"
 
@@ -257,6 +257,6 @@ void main(void)
 	/* Wait a few seconds before main() exit, giving the sample the
 	 * opportunity to dump some output before coverage data gets emitted
 	 */
-	k_sleep(5000);
+	k_sleep(K_MSEC(5000));
 #endif
 }

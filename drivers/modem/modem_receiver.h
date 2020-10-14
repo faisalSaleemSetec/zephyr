@@ -15,7 +15,7 @@
 #define ZEPHYR_INCLUDE_DRIVERS_MODEM_MODEM_RECEIVER_H_
 
 #include <kernel.h>
-#include <ring_buffer.h>
+#include <sys/ring_buffer.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -85,6 +85,10 @@ int mdm_receiver_send(struct mdm_receiver_context *ctx,
 int mdm_receiver_register(struct mdm_receiver_context *ctx,
 			  const char *uart_dev_name,
 			  u8_t *buf, size_t size);
+
+int mdm_receiver_sleep(struct mdm_receiver_context *ctx);
+
+int mdm_receiver_wake(struct mdm_receiver_context *ctx);
 
 #ifdef __cplusplus
 }

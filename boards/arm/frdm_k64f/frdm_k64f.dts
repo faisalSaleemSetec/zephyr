@@ -36,6 +36,7 @@
 		sw0 = &user_button_3;
 		sw1 = &user_button_2;
 		eth = &eth;
+		can-0 = &can0;
 	};
 
 	chosen {
@@ -78,6 +79,8 @@
 	arduino_header: connector {
 		compatible = "arduino-header-r3";
 		#gpio-cells = <2>;
+		gpio-map-mask = <0xffffffff 0xffffffc0>;
+		gpio-map-pass-thru = <0 0x3f>;
 		gpio-map = <0 0 &gpiob 2 0>,	/* A0 */
 			   <1 0 &gpiob 3 0>,	/* A1 */
 			   <2 0 &gpiob 10 0>,	/* A2 */
@@ -106,7 +109,14 @@
 	};
 };
 
-arduino_serial: &uart3 {};
+arduino_serial: &uart3 {
+	status = "okay";
+	current-speed = <115200>;
+};
+
+&cpu0 {
+	clock-frequency = <120000000>;
+};
 
 &adc0 {
 	status = "okay";
@@ -116,7 +126,7 @@ arduino_serial: &uart3 {};
 	status = "okay";
 };
 
-&i2c0 {
+arduino_i2c: &i2c0 {
 	status = "okay";
 
 	fxos8700@1d {
@@ -128,18 +138,8 @@ arduino_serial: &uart3 {};
 	};
 };
 
-&spi0 {
+arduino_spi: &spi0 {
 	status = "okay";
-
-	mcr20a@0 {
-		compatible = "nxp,mcr20a";
-		reg = <0x0>;
-		label = "mcr20a";
-		spi-max-frequency = <4000000>;
-		irqb-gpios = <&gpiob 9 0>;
-		reset-gpios = <&gpioa 2 0>;
-		status = "okay";
-	};
 };
 
 &pwm3 {
@@ -203,4 +203,10 @@ arduino_serial: &uart3 {};
 	ptp {
 		status = "okay";
 	};
+};
+
+
+&can0 {
+	status = "okay";
+	bus-speed = <125000>;
 };

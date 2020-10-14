@@ -15,6 +15,11 @@ endif()
 file(TO_CMAKE_PATH "$ENV{ZEPHYR_BASE}" ZEPHYR_BASE)
 
 message(STATUS "Zephyr base: ${ZEPHYR_BASE}")
+if(DEFINED WEST)
+  message(STATUS "West: ${WEST}")
+else()
+  message(STATUS "West: not found")
+endif()
 
 find_package(PythonInterp 3.4)
 set(DOXYGEN_SKIP_DOT True)
@@ -130,7 +135,9 @@ add_custom_target(
 # a superset of INPUT= and FILE_PATTERNS= in zephyr.doxyfile.in
 file(GLOB_RECURSE  DOXY_SOURCES
   ${ZEPHYR_BASE}/include/*.[c,h,S]
+  ${ZEPHYR_BASE}/kernel/include/kernel_arch_interface.h
   ${ZEPHYR_BASE}/lib/libc/*.[c,h,S]
+  ${ZEPHYR_BASE}/subsys/testsuite/ztest/include/*.[h,c,S]
   ${ZEPHYR_BASE}/tests/*.[h,c,S]
   )
 # For debug. Also find generated list in doc/_build/(build.ninja|CMakeFiles/)
@@ -178,7 +185,7 @@ add_custom_target(
 )
 
 if(WIN32)
-  set(SEP ;)
+  set(SEP $<SEMICOLON>)
 else()
   set(SEP :)
 endif()
@@ -187,20 +194,28 @@ add_custom_target(
   kconfig
   COMMAND ${CMAKE_COMMAND} -E make_directory ${RST_OUT}/doc/reference/kconfig
   COMMAND ${CMAKE_COMMAND} -E env
-  PYTHONPATH="${ZEPHYR_BASE}/scripts/kconfig${SEP}$ENV{PYTHONPATH}"
+  PYTHONPATH=${ZEPHYR_BASE}/scripts/kconfig${SEP}$ENV{PYTHONPATH}
   ZEPHYR_BASE=${ZEPHYR_BASE}
   srctree=${ZEPHYR_BASE}
-  KERNELVERSION=${KERNELVERSION}
-  BOARD_DIR=boards/*/*/
+  BOARD_DIR=boards/*/*
   ARCH=*
-  ARCH_DIR=arch/
-  SOC_DIR=soc/
-  SRCARCH=x86
+  ARCH_DIR=arch
+  SOC_DIR=soc
   CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}
   KCONFIG_WARN_UNDEF=y
   KCONFIG_TURBO_MODE=${KCONFIG_TURBO_MODE}
   KCONFIG_DOC_MODE=1
-  ${PYTHON_EXECUTABLE} scripts/genrest.py Kconfig ${RST_OUT}/doc/reference/kconfig/
+    ${PYTHON_EXECUTABLE} scripts/genrest.py ${RST_OUT}/doc/reference/kconfig/
+      --separate-all-index
+      --keep-module-paths
+      --modules Architecture,arch,${ZEPHYR_BASE}/arch
+                Driver,drivers,${ZEPHYR_BASE}/drivers
+                Kernel,kernel,${ZEPHYR_BASE}/kernel
+                Library,lib,${ZEPHYR_BASE}/lib
+                Subsystem,subsys,${ZEPHYR_BASE}/subsys
+                "External Module,modules,${ZEPHYR_BASE}/modules"
+
+  VERBATIM
   WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
   COMMENT "Running genrest.py Kconfig ${RST_OUT}/doc/reference/kconfig/"
 )

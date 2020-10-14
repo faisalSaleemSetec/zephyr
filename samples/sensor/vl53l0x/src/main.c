@@ -6,9 +6,9 @@
 
 #include <zephyr.h>
 #include <device.h>
-#include <sensor.h>
+#include <drivers/sensor.h>
 #include <stdio.h>
-#include <misc/printk.h>
+#include <sys/printk.h>
 
 void main(void)
 {
@@ -36,6 +36,6 @@ void main(void)
 					 &value);
 		printf("distance is %.3fm\n", sensor_value_to_double(&value));
 
-		k_sleep(1000);
+		k_sleep(K_MSEC(1000));
 	}
 }

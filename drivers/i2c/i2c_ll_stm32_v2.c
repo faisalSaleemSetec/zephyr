@@ -9,12 +9,12 @@
  */
 
 #include <clock_control/stm32_clock_control.h>
-#include <clock_control.h>
-#include <misc/util.h>
+#include <drivers/clock_control.h>
+#include <sys/util.h>
 #include <kernel.h>
 #include <soc.h>
 #include <errno.h>
-#include <i2c.h>
+#include <drivers/i2c.h>
 #include "i2c_ll_stm32.h"
 
 #define LOG_LEVEL CONFIG_I2C_LOG_LEVEL
@@ -246,6 +246,8 @@ int i2c_stm32_slave_unregister(struct device *dev,
 
 	LL_I2C_Disable(i2c);
 
+	data->slave_attached = false;
+
 	LOG_DBG("i2c: slave unregistered");
 
 	return 0;
@@ -284,7 +286,12 @@ static void stm32_i2c_event(struct device *dev)
 	if (LL_I2C_IsActiveFlag_NACK(i2c)) {
 		LL_I2C_ClearFlag_NACK(i2c);
 		data->current.is_nack = 1U;
-		goto end;
+		/*
+		 * AutoEndMode is always disabled in master mode,
+		 * so send a stop condition manually
+		 */
+		LL_I2C_GenerateStopCondition(i2c);
+		return;
 	}
 
 	/* STOP received */

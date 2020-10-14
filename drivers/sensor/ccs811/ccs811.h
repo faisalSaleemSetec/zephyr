@@ -8,8 +8,8 @@
 #define ZEPHYR_DRIVERS_SENSOR_CCS811_CCS811_H_
 
 #include <device.h>
-#include <gpio.h>
-#include <misc/util.h>
+#include <drivers/gpio.h>
+#include <sys/util.h>
 
 /* Registers */
 #define CCS811_REG_STATUS		0x00
@@ -44,8 +44,11 @@
 
 struct ccs811_data {
 	struct device *i2c;
-#ifdef CONFIG_CCS811_GPIO_WAKEUP
-	struct device *gpio;
+#ifdef DT_INST_0_AMS_CCS811_WAKE_GPIOS_CONTROLLER
+	struct device *gpio_wakeup;
+#endif
+#ifdef DT_INST_0_AMS_CCS811_RESET_GPIOS_CONTROLLER
+	struct device *gpio_reset;
 #endif
 	u16_t co2;
 	u16_t voc;

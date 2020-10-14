@@ -8,19 +8,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <sensor.h>
+#include <drivers/sensor.h>
 #include <kernel.h>
 #include <device.h>
 #include <init.h>
-#include <i2c.h>
-#include <misc/byteorder.h>
-#include <gpio.h>
+#include <drivers/i2c.h>
+#include <sys/byteorder.h>
+#include <drivers/gpio.h>
 #include <logging/log.h>
 
 #include "lsm9ds0_mfd.h"
 
-#define LOG_LEVEL CONFIG_SENSOR_LOG_LEVEL
-LOG_MODULE_REGISTER(LSM9DS0_MFD);
+LOG_MODULE_REGISTER(LSM9DS0_MFD, CONFIG_SENSOR_LOG_LEVEL);
 
 static inline int lsm9ds0_mfd_reboot_memory(struct device *dev)
 {

@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2015 Intel Corporation.
  *
@@ -596,9 +595,10 @@ static inline int device_pm_put_sync(struct device *dev) { return -ENOTSUP; }
  * @}
  */
 
-#include <syscalls/device.h>
-
 #ifdef __cplusplus
 }
 #endif
+
+#include <syscalls/device.h>
+
 #endif /* ZEPHYR_INCLUDE_DEVICE_H_ */

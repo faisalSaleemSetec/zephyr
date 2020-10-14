@@ -5,6 +5,7 @@
 add_library(kernel
   device.c
   errno.c
+  fatal.c
   idle.c
   init.c
   mailbox.c
@@ -52,6 +53,10 @@ target_sources_ifdef(
   userspace.c
   )
 
+target_include_directories(kernel PRIVATE
+  ${ZEPHYR_BASE}/kernel/include
+  ${ZEPHYR_BASE}/arch/${ARCH}/include
+  )
 
 add_dependencies(kernel ${OFFSETS_H_TARGET})
 

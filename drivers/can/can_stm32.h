@@ -8,13 +8,13 @@
 #ifndef ZEPHYR_DRIVERS_CAN_STM32_CAN_H_
 #define ZEPHYR_DRIVERS_CAN_STM32_CAN_H_
 
-#include <can.h>
+#include <drivers/can.h>
 
 #define DEV_DATA(dev) ((struct can_stm32_data *const)(dev)->driver_data)
 #define DEV_CFG(dev) \
 	((const struct can_stm32_config *const)(dev)->config->config_info)
 
-#define BIT_SEG_LENGTH(cfg) ((cfg)->prop_bs1 + (cfg)->bs2 + 1)
+#define BIT_SEG_LENGTH(cfg) ((cfg)->prop_ts1 + (cfg)->ts2 + 1)
 
 #define CAN_NUMBER_OF_FILTER_BANKS (14)
 #define CAN_MAX_NUMBER_OF_FILTERS (CAN_NUMBER_OF_FILTER_BANKS * 4)
@@ -56,8 +56,7 @@ enum can_filter_type {
 };
 
 struct can_stm32_data {
-	struct k_mutex tx_mutex;
-	struct k_mutex set_filter_mutex;
+	struct k_mutex inst_mutex;
 	struct k_sem tx_int_sem;
 	struct can_mailbox mb0;
 	struct can_mailbox mb1;
@@ -65,14 +64,15 @@ struct can_stm32_data {
 	u64_t filter_usage;
 	can_rx_callback_t rx_cb[CONFIG_CAN_MAX_FILTER];
 	void *cb_arg[CONFIG_CAN_MAX_FILTER];
+	can_state_change_isr_t state_change_isr;
 };
 
 struct can_stm32_config {
 	CAN_TypeDef *can;   /*!< CAN Registers*/
 	u32_t bus_speed;
 	u8_t sjw;
-	u8_t prop_bs1;
-	u8_t bs2;
+	u8_t prop_ts1;
+	u8_t ts2;
 	struct stm32_pclken pclken;
 	void (*config_irq)(CAN_TypeDef *can);
 };

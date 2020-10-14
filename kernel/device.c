@@ -4,11 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <errno.h>
 #include <string.h>
 #include <device.h>
-#include <misc/util.h>
-#include <atomic.h>
+#include <sys/atomic.h>
 #include <syscall_handler.h>
 
 extern struct device __device_init_start[];
@@ -24,6 +22,8 @@ extern u32_t __device_busy_start[];
 extern u32_t __device_busy_end[];
 #define DEVICE_BUSY_SIZE (__device_busy_end - __device_busy_start)
 #endif
+
+s8_t z_sys_device_level;
 
 /**
  * @brief Execute all the device initialization functions at a given level
@@ -48,6 +48,7 @@ void z_sys_device_do_config_level(s32_t level)
 		__device_init_end,
 	};
 
+	z_sys_device_level = level;
 	for (info = config_levels[level]; info < config_levels[level+1];
 								info++) {
 		int retval;
@@ -95,7 +96,7 @@ struct device *z_impl_device_get_binding(const char *name)
 }
 
 #ifdef CONFIG_USERSPACE
-Z_SYSCALL_HANDLER(device_get_binding, name)
+static inline struct device *z_vrfy_device_get_binding(const char *name)
 {
 	char name_copy[Z_DEVICE_MAX_NAME_LEN];
 
@@ -104,8 +105,9 @@ Z_SYSCALL_HANDLER(device_get_binding, name)
 		return 0;
 	}
 
-	return (u32_t)z_impl_device_get_binding(name_copy);
+	return z_impl_device_get_binding(name_copy);
 }
+#include <syscalls/device_get_binding_mrsh.c>
 #endif /* CONFIG_USERSPACE */
 
 #ifdef CONFIG_DEVICE_POWER_MANAGEMENT

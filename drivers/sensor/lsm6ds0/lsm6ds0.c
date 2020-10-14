@@ -8,18 +8,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <sensor.h>
+#include <drivers/sensor.h>
 #include <kernel.h>
 #include <device.h>
 #include <init.h>
-#include <misc/byteorder.h>
-#include <misc/__assert.h>
+#include <sys/byteorder.h>
+#include <sys/__assert.h>
 #include <logging/log.h>
 
 #include "lsm6ds0.h"
 
-#define LOG_LEVEL CONFIG_SENSOR_LOG_LEVEL
-LOG_MODULE_REGISTER(LSM6DS0);
+LOG_MODULE_REGISTER(LSM6DS0, CONFIG_SENSOR_LOG_LEVEL);
 
 static inline int lsm6ds0_reboot(struct device *dev)
 {

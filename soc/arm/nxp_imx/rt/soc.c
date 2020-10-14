@@ -11,7 +11,7 @@
 #include <linker/sections.h>
 #include <fsl_clock.h>
 #include <arch/cpu.h>
-#include <cortex_m/exc.h>
+#include <arch/arm/cortex_m/cmsis.h>
 #include <fsl_flexspi_nor_boot.h>
 #if CONFIG_USB_DC_NXP_EHCI
 #include "usb_phy.h"
@@ -106,7 +106,7 @@ const __imx_boot_ivt_section ivt image_vector_table = {
  * @return N/A
  *
  */
-static ALWAYS_INLINE void clkInit(void)
+static ALWAYS_INLINE void clock_init(void)
 {
 	/* Boot ROM did initialize the XTAL, here we only sets external XTAL
 	 * OSC freq
@@ -179,10 +179,31 @@ static ALWAYS_INLINE void clkInit(void)
 
 #if CONFIG_USB_DC_NXP_EHCI
 	CLOCK_EnableUsbhs0PhyPllClock(kCLOCK_Usb480M,
-				CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC);
+				DT_INST_0_NXP_KINETIS_USBD_CLOCKS_CLOCK_FREQUENCY);
 	CLOCK_EnableUsbhs0Clock(kCLOCK_Usb480M,
-				CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC);
+				DT_INST_0_NXP_KINETIS_USBD_CLOCKS_CLOCK_FREQUENCY);
 	USB_EhciPhyInit(kUSB_ControllerEhci0, CPU_XTAL_CLK_HZ, &usbPhyConfig);
+#endif
+
+#if defined(CONFIG_DISK_ACCESS_USDHC1) ||       \
+	defined(CONFIG_DISK_ACCESS_USDHC2)
+	CLOCK_InitSysPfd(kCLOCK_Pfd0, 0x12U);
+	/* Configure USDHC clock source and divider */
+#ifdef CONFIG_DISK_ACCESS_USDHC1
+	CLOCK_SetDiv(kCLOCK_Usdhc1Div, 0U);
+	CLOCK_SetMux(kCLOCK_Usdhc1Mux, 1U);
+	CLOCK_EnableClock(kCLOCK_Usdhc1);
+#endif
+#ifdef CONFIG_DISK_ACCESS_USDHC2
+	CLOCK_SetDiv(kCLOCK_Usdhc2Div, 0U);
+	CLOCK_SetMux(kCLOCK_Usdhc2Mux, 1U);
+	CLOCK_EnableClock(kCLOCK_Usdhc2);
+#endif
+#endif
+#ifdef CONFIG_VIDEO_MCUX_CSI
+	CLOCK_EnableClock(kCLOCK_Csi); /* Disable CSI clock gate */
+	CLOCK_SetDiv(kCLOCK_CsiDiv, 0); /* Set CSI divider to 1 */
+	CLOCK_SetMux(kCLOCK_CsiMux, 0); /* Set CSI source to OSC 24M */
 #endif
 
 	/* Keep the system clock running so SYSTICK can wake up the system from
@@ -191,6 +212,34 @@ static ALWAYS_INLINE void clkInit(void)
 	CLOCK_SetMode(kCLOCK_ModeRun);
 
 }
+
+#if defined(CONFIG_DISK_ACCESS_USDHC1) ||	\
+	defined(CONFIG_DISK_ACCESS_USDHC2)
+
+/* Usdhc driver needs to re-configure pinmux
+ * Pinmux depends on board design.
+ * From the perspective of Usdhc driver,
+ * it can't access board specific function.
+ * So SoC provides this for board to register
+ * its usdhc pinmux and for usdhc to access
+ * pinmux.
+ */
+
+static usdhc_pin_cfg_cb g_usdhc_pin_cfg_cb;
+
+void imxrt_usdhc_pinmux_cb_register(usdhc_pin_cfg_cb cb)
+{
+	g_usdhc_pin_cfg_cb = cb;
+}
+
+void imxrt_usdhc_pinmux(u16_t nusdhc, bool init,
+	u32_t speed, u32_t strength)
+{
+	if (g_usdhc_pin_cfg_cb)
+		g_usdhc_pin_cfg_cb(nusdhc, init,
+			speed, strength);
+}
+#endif
 
 /**
  *
@@ -236,7 +285,7 @@ static int imxrt_init(struct device *arg)
 	}
 
 	/* Initialize system clock */
-	clkInit();
+	clock_init();
 
 	/*
 	 * install default handler that simply resets the CPU

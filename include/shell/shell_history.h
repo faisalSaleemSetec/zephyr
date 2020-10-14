@@ -8,9 +8,9 @@
 #define SHELL_HISTORY_H__
 
 #include <zephyr.h>
-#include <misc/util.h>
-#include <misc/dlist.h>
-#include <ring_buffer.h>
+#include <sys/util.h>
+#include <sys/dlist.h>
+#include <sys/ring_buffer.h>
 #include <stdbool.h>
 
 #ifdef __cplusplus
@@ -31,7 +31,7 @@ struct shell_history {
  * @param _size Memory dedicated for shell history.
  */
 #define SHELL_HISTORY_DEFINE(_name, _size) \
-	static u8_t __noinit __aligned(sizeof(u32_t)) \
+	static u8_t __noinit __aligned(sizeof(void *)) \
 			_name##_ring_buf_data[_size]; \
 	static struct ring_buf _name##_ring_buf = \
 		{ \
@@ -75,7 +75,7 @@ void shell_history_mode_exit(struct shell_history *history);
  * @param[in]     history	Shell history instance.
  * @param[in]     up		Direction.
  * @param[out]    dst		Buffer where line is copied.
- * @param[in,out] len		Buffer size (intput), amount of copied
+ * @param[in,out] len		Buffer size (input), amount of copied
  *				data (output).
  * @return True if remains in history mode.
  */

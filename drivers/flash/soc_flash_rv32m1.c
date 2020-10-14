@@ -7,7 +7,7 @@
 #include <kernel.h>
 #include <device.h>
 #include <string.h>
-#include <flash.h>
+#include <drivers/flash.h>
 #include <errno.h>
 #include <init.h>
 #include <soc.h>
@@ -165,4 +165,3 @@ static int flash_mcux_init(struct device *dev)
 DEVICE_AND_API_INIT(flash_mcux, DT_FLASH_DEV_NAME,
 			flash_mcux_init, &flash_data, NULL, POST_KERNEL,
 			CONFIG_KERNEL_INIT_PRIORITY_DEVICE, &flash_mcux_api);
-

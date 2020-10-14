@@ -17,14 +17,14 @@
  * @{
  */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#include <atomic.h>
+#include <sys/atomic.h>
 #include <bluetooth/buf.h>
 #include <bluetooth/conn.h>
 #include <bluetooth/hci.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* L2CAP header size, used for buffer size calculations */
 #define BT_L2CAP_HDR_SIZE               4
@@ -38,7 +38,7 @@ extern "C" {
  *
  *   @return Needed buffer size to match the requested L2CAP MTU.
  */
-#define BT_L2CAP_BUF_SIZE(mtu) (CONFIG_BT_HCI_RESERVE + \
+#define BT_L2CAP_BUF_SIZE(mtu) (BT_BUF_RESERVE + \
 				BT_HCI_ACL_HDR_SIZE + BT_L2CAP_HDR_SIZE + \
 				(mtu))
 
@@ -66,12 +66,20 @@ typedef enum bt_l2cap_chan_state {
 	BT_L2CAP_CONNECTED,
 	/** Channel in disconnecting state */
 	BT_L2CAP_DISCONNECT,
+
 } __packed bt_l2cap_chan_state_t;
 
 /** @brief Status of L2CAP channel. */
 typedef enum bt_l2cap_chan_status {
 	/** Channel output status */
 	BT_L2CAP_STATUS_OUT,
+
+	/** Channel shutdown status
+	 *
+	 * Once this status is notified it means the channel will no longer be
+	 * able to transmit or receive data.
+	 */
+	BT_L2CAP_STATUS_SHUTDOWN,
 
 	/* Total number of status - must be at the end of the enum */
 	BT_L2CAP_NUM_STATUS,
@@ -88,9 +96,6 @@ struct bt_l2cap_chan {
 	/* Response Timeout eXpired (RTX) timer */
 	struct k_delayed_work		rtx_work;
 	ATOMIC_DEFINE(status, BT_L2CAP_NUM_STATUS);
-
-	struct k_work			rx_work;
-	struct k_fifo			rx_queue;
 
 #if defined(CONFIG_BT_L2CAP_DYNAMIC_CHANNEL)
 	bt_l2cap_chan_state_t		state;
@@ -128,9 +133,14 @@ struct bt_l2cap_le_chan {
 	struct k_fifo                   tx_queue;
 	/** Channel Pending Transmission buffer  */
 	struct net_buf                  *tx_buf;
+	/** Channel Transmission work  */
+	struct k_work			tx_work;
 	/** Segment SDU packet from upper layer */
 	struct net_buf			*_sdu;
 	u16_t				_sdu_len;
+
+	struct k_work			rx_work;
+	struct k_fifo			rx_queue;
 };
 
 /** @def BT_L2CAP_LE_CHAN(_ch)
@@ -249,7 +259,7 @@ struct bt_l2cap_chan_ops {
 /** @def BT_L2CAP_CHAN_SEND_RESERVE
  *  @brief Headroom needed for outgoing buffers
  */
-#define BT_L2CAP_CHAN_SEND_RESERVE (CONFIG_BT_HCI_RESERVE + 4 + 4)
+#define BT_L2CAP_CHAN_SEND_RESERVE (BT_BUF_RESERVE + 4 + 4)
 
 /** @brief L2CAP Server structure. */
 struct bt_l2cap_server {

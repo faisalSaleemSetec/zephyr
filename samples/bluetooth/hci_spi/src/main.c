@@ -11,14 +11,14 @@
 #include <stdio.h>
 
 #include <zephyr.h>
-#include <misc/byteorder.h>
+#include <sys/byteorder.h>
 #include <logging/log.h>
-#include <misc/stack.h>
+#include <debug/stack.h>
 
 #include <device.h>
 #include <init.h>
-#include <gpio.h>
-#include <spi.h>
+#include <drivers/gpio.h>
+#include <drivers/spi.h>
 
 #include <net/buf.h>
 #include <bluetooth/bluetooth.h>
@@ -48,7 +48,7 @@ LOG_MODULE_REGISTER(LOG_MODULE_NAME);
 #define PACKET_TYPE             0
 #define EVT_BLUE_INITIALIZED    0x01
 
-#define GPIO_IRQ_PIN            DT_INST_0_ZEPHYR_BT_HCI_SPI_SLAVE_IRQ_GPIO_PIN
+#define GPIO_IRQ_PIN            DT_INST_0_ZEPHYR_BT_HCI_SPI_SLAVE_IRQ_GPIOS_PIN
 
 /* Needs to be aligned with the SPI master buffer size */
 #define SPI_MAX_MSG_LEN         255
@@ -70,8 +70,8 @@ const static struct spi_buf_set tx_bufs = {
 /* HCI buffer pools */
 #define CMD_BUF_SIZE BT_BUF_RX_SIZE
 
-NET_BUF_POOL_DEFINE(cmd_tx_pool, CONFIG_BT_HCI_CMD_COUNT, CMD_BUF_SIZE,
-		    BT_BUF_USER_DATA_MIN, NULL);
+NET_BUF_POOL_FIXED_DEFINE(cmd_tx_pool, CONFIG_BT_HCI_CMD_COUNT, CMD_BUF_SIZE,
+			  NULL);
 
 #if defined(CONFIG_BT_CTLR)
 #define BT_L2CAP_MTU (CONFIG_BT_CTLR_TX_BUFFER_SIZE - \
@@ -89,8 +89,7 @@ NET_BUF_POOL_DEFINE(cmd_tx_pool, CONFIG_BT_HCI_CMD_COUNT, CMD_BUF_SIZE,
 #define TX_BUF_COUNT 6
 #endif
 
-NET_BUF_POOL_DEFINE(acl_tx_pool, TX_BUF_COUNT, BT_BUF_ACL_SIZE,
-		    BT_BUF_USER_DATA_MIN, NULL);
+NET_BUF_POOL_FIXED_DEFINE(acl_tx_pool, TX_BUF_COUNT, BT_BUF_ACL_SIZE, NULL);
 
 static struct device *spi_hci_dev;
 static struct spi_config spi_cfg = {
@@ -278,7 +277,7 @@ static int hci_spi_init(struct device *unused)
 	}
 
 	gpio_dev = device_get_binding(
-		DT_INST_0_ZEPHYR_BT_HCI_SPI_SLAVE_IRQ_GPIO_CONTROLLER);
+		DT_INST_0_ZEPHYR_BT_HCI_SPI_SLAVE_IRQ_GPIOS_CONTROLLER);
 	if (!gpio_dev) {
 		return -EINVAL;
 	}

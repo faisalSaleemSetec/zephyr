@@ -15,7 +15,7 @@ Semiconductor nRF52832 ARM Cortex-M4 CPU and the following devices:
 * :abbr:`MPU (Memory Protection Unit)`
 * :abbr:`NVIC (Nested Vectored Interrupt Controller)`
 * :abbr:`PWM (Pulse Width Modulation)`
-* RADIO (Bluetooth Low Energy and 802.15.4)
+* RADIO (Bluetooth Low Energy)
 * :abbr:`RTC (nRF RTC System Clock)`
 * Segger RTT (RTT Console)
 * :abbr:`WDT (Watchdog Timer)`
@@ -28,7 +28,7 @@ Semiconductor nRF52832 ARM Cortex-M4 CPU and the following devices:
      Holyiot YJ-16019 (Credit: Holyiot)
 
 The board is equipped with one LED, one push button, and is powered by
-a CR2032 coin cell. The `Nordic Semiconductor Documentation library`_
+a CR2032 coin cell. The `Nordic Semiconductor Infocenter`_
 contains the processor's information and the datasheet.
 
 Hardware
@@ -58,8 +58,7 @@ hardware features:
 +-----------+------------+----------------------+
 | PWM       | on-chip    | pwm                  |
 +-----------+------------+----------------------+
-| RADIO     | on-chip    | Bluetooth,           |
-|           |            | ieee802154           |
+| RADIO     | on-chip    | Bluetooth            |
 +-----------+------------+----------------------+
 | RTC       | on-chip    | system clock         |
 +-----------+------------+----------------------+
@@ -147,5 +146,4 @@ References
 .. target-notes::
 
 .. _Holyiot: http://www.holyiot.com
-.. _Nordic Semiconductor Documentation library: https://www.nordicsemi.com/DocLib
-
+.. _Nordic Semiconductor Infocenter: https://infocenter.nordicsemi.com

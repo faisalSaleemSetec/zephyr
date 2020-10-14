@@ -15,8 +15,11 @@
 #define IRQ_MASK		DT_INST_0_VEXRISCV_INTC0_IRQ_MASK_BASE_ADDRESS
 #define IRQ_PENDING		DT_INST_0_VEXRISCV_INTC0_IRQ_PENDING_BASE_ADDRESS
 
-#define TIMER0_IRQ		DT_LITEX_TIMER0_E0002800_IRQ_0
-#define UART0_IRQ		DT_LITEX_UART0_E0001800_IRQ_0
+#define TIMER0_IRQ		DT_INST_0_LITEX_TIMER0_IRQ_0
+#define UART0_IRQ		DT_INST_0_LITEX_UART0_IRQ_0
+
+#define ETH0_IRQ		DT_INST_0_LITEX_ETH0_IRQ_0
+
 static inline void vexriscv_litex_irq_setmask(u32_t mask)
 {
 	__asm__ volatile ("csrw %0, %1" :: "i"(IRQ_MASK), "r"(mask));
@@ -71,19 +74,26 @@ static void vexriscv_litex_irq_handler(void *device)
 		ite->isr(ite->arg);
 	}
 #endif
+
+#ifdef CONFIG_ETH_LITEETH
+	if (irqs & (1 << ETH0_IRQ)) {
+		ite = (struct _isr_table_entry *)&_sw_isr_table[ETH0_IRQ];
+		ite->isr(ite->arg);
+	}
+#endif
 }
 
-void z_arch_irq_enable(unsigned int irq)
+void arch_irq_enable(unsigned int irq)
 {
 	vexriscv_litex_irq_setmask(vexriscv_litex_irq_getmask() | (1 << irq));
 }
 
-void z_arch_irq_disable(unsigned int irq)
+void arch_irq_disable(unsigned int irq)
 {
 	vexriscv_litex_irq_setmask(vexriscv_litex_irq_getmask() & ~(1 << irq));
 }
 
-int z_arch_irq_is_enabled(unsigned int irq)
+int arch_irq_is_enabled(unsigned int irq)
 {
 	return vexriscv_litex_irq_getmask() & (1 << irq);
 }

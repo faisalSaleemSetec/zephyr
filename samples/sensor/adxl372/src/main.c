@@ -5,7 +5,7 @@
  */
 
 #include <zephyr.h>
-#include <sensor.h>
+#include <drivers/sensor.h>
 #include <stdio.h>
 
 #define pow2(x) ((x) * (x))
@@ -104,7 +104,7 @@ void main(void)
 		}
 
 		if (!IS_ENABLED(CONFIG_ADXL372_TRIGGER)) {
-			k_sleep(2000);
+			k_sleep(K_MSEC(2000));
 		}
 	}
 }

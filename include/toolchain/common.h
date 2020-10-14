@@ -54,7 +54,7 @@
 
 #ifdef _ASMLANGUAGE
 
-  #if defined(CONFIG_X86) || defined(CONFIG_X86_64)
+  #if defined(CONFIG_X86)
 
     #ifdef PERF_OPT
       #define PERFOPT_ALIGN .balign 16
@@ -70,7 +70,7 @@
 
     #define PERFOPT_ALIGN .balign  4
 
-  #elif defined(CONFIG_NIOS2) || defined(CONFIG_RISCV32) || \
+  #elif defined(CONFIG_NIOS2) || defined(CONFIG_RISCV) || \
 	  defined(CONFIG_XTENSA)
     #define PERFOPT_ALIGN .balign 4
 

@@ -5,18 +5,17 @@
  */
 
 #include <device.h>
-#include <i2c.h>
-#include <gpio.h>
+#include <drivers/i2c.h>
+#include <drivers/gpio.h>
 #include <kernel.h>
-#include <sensor.h>
-#include <misc/util.h>
-#include <misc/__assert.h>
+#include <drivers/sensor.h>
+#include <sys/util.h>
+#include <sys/__assert.h>
 #include <logging/log.h>
 
 #include "ti_hdc.h"
 
-#define LOG_LEVEL CONFIG_SENSOR_LOG_LEVEL
-LOG_MODULE_REGISTER(TI_HDC);
+LOG_MODULE_REGISTER(TI_HDC, CONFIG_SENSOR_LOG_LEVEL);
 
 #if defined(DT_INST_0_TI_HDC_DRDY_GPIOS_CONTROLLER)
 static void ti_hdc_gpio_callback(struct device *dev,

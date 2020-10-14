@@ -12,11 +12,11 @@
 #include <zephyr.h>
 
 #include <init.h>
-#include <uart.h>
-#include <misc/util.h>
-#include <misc/byteorder.h>
-#include <misc/stack.h>
-#include <misc/printk.h>
+#include <drivers/uart.h>
+#include <sys/util.h>
+#include <sys/byteorder.h>
+#include <debug/stack.h>
+#include <sys/printk.h>
 #include <string.h>
 
 #include <bluetooth/bluetooth.h>
@@ -122,7 +122,7 @@ static const u8_t conf_rsp[] = { 0x04, 0x7b };
 /* H5 signal buffers pool */
 #define MAX_SIG_LEN	3
 #define SIGNAL_COUNT	2
-#define SIG_BUF_SIZE (CONFIG_BT_HCI_RESERVE + MAX_SIG_LEN)
+#define SIG_BUF_SIZE (BT_BUF_RESERVE + MAX_SIG_LEN)
 NET_BUF_POOL_DEFINE(h5_pool, SIGNAL_COUNT, SIG_BUF_SIZE, 0, NULL);
 
 static struct device *h5_dev;
@@ -397,6 +397,12 @@ static void h5_process_complete_packet(u8_t *hdr)
 		net_buf_put(&h5.rx_queue, buf);
 		break;
 	case HCI_EVENT_PKT:
+		if (buf->len > sizeof(struct bt_hci_evt_hdr) &&
+			bt_hci_evt_is_prio(((struct bt_hci_evt_hdr *)buf->data)->evt)) {
+			hexdump("=> ", buf->data, buf->len);
+			bt_recv_prio(buf);
+			break;
+		}
 	case HCI_ACLDATA_PKT:
 		hexdump("=> ", buf->data, buf->len);
 		bt_recv(buf);
@@ -406,23 +412,7 @@ static void h5_process_complete_packet(u8_t *hdr)
 
 static inline struct net_buf *get_evt_buf(u8_t evt)
 {
-	struct net_buf *buf;
-
-	switch (evt) {
-	case BT_HCI_EVT_CMD_COMPLETE:
-	case BT_HCI_EVT_CMD_STATUS:
-		buf = bt_buf_get_cmd_complete(K_NO_WAIT);
-		break;
-	default:
-		buf = bt_buf_get_rx(BT_BUF_EVT, K_NO_WAIT);
-		break;
-	}
-
-	if (buf) {
-		net_buf_add_u8(h5.rx_buf, evt);
-	}
-
-	return buf;
+	return bt_buf_get_evt(evt, false, K_NO_WAIT);
 }
 
 static void bt_uart_isr(struct device *unused)
@@ -516,6 +506,9 @@ static void bt_uart_isr(struct device *unused)
 				       H5_HDR_PKT_TYPE(hdr));
 				h5.rx_state = END;
 				break;
+			}
+			if (!remaining) {
+				h5.rx_state = END;
 			}
 			break;
 		case PAYLOAD:
@@ -617,11 +610,11 @@ static void tx_thread(void)
 		switch (h5.link_state) {
 		case UNINIT:
 			/* FIXME: send sync */
-			k_sleep(100);
+			k_sleep(K_MSEC(100));
 			break;
 		case INIT:
 			/* FIXME: send conf */
-			k_sleep(100);
+			k_sleep(K_MSEC(100));
 			break;
 		case ACTIVE:
 			buf = net_buf_get(&h5.tx_queue, K_FOREVER);

@@ -17,6 +17,7 @@
 		zephyr,shell-uart = &uart0;
 		zephyr,uart-mcumgr = &uart0;
 		zephyr,bt-mon-uart = &uart0;
+		zephyr,bt-c2h-uart = &uart0;
 		zephyr,sram = &sram0;
 		zephyr,flash = &flash0;
 		zephyr,code-partition = &slot0_partition;
@@ -39,6 +40,13 @@
 		led3: led_3 {
 			gpios = <&gpio0 16 GPIO_INT_ACTIVE_LOW>;
 			label = "Green LED 3";
+		};
+	};
+
+	pwmleds {
+		compatible = "pwm-leds";
+		pwm_led0: pwm_led_0 {
+			pwms = <&pwm0 13>;
 		};
 	};
 
@@ -65,6 +73,8 @@
 	arduino_header: connector {
 		compatible = "arduino-header-r3";
 		#gpio-cells = <2>;
+		gpio-map-mask = <0xffffffff 0xffffffc0>;
+		gpio-map-pass-thru = <0 0x3f>;
 		gpio-map = <0 0 &gpio0 3 0>,	/* A0 */
 			   <1 0 &gpio0 4 0>,	/* A1 */
 			   <2 0 &gpio0 28 0>,	/* A2 */
@@ -95,6 +105,7 @@
 		led1 = &led1;
 		led2 = &led2;
 		led3 = &led3;
+		pwm-led0 = &pwm_led0;
 		sw0 = &button0;
 		sw1 = &button1;
 		sw2 = &button2;
@@ -120,21 +131,30 @@
 
 &uart0 {
 	compatible = "nordic,nrf-uart";
-	current-speed = <115200>;
 	status = "okay";
+	current-speed = <115200>;
 	tx-pin = <6>;
 	rx-pin = <8>;
 	rts-pin = <5>;
 	cts-pin = <7>;
 };
 
-&i2c0 {
+arduino_serial: &uart1 {
+	status = "okay";
+	current-speed = <115200>;
+	rx-pin = <33>;
+	tx-pin = <34>;
+};
+
+arduino_i2c: &i2c0 {
+	compatible = "nordic,nrf-twi";
 	status = "okay";
 	sda-pin = <26>;
 	scl-pin = <27>;
 };
 
 &i2c1 {
+	compatible = "nordic,nrf-twi";
 	/* Cannot be used together with spi1. */
 	/* status = "okay"; */
 	sda-pin = <30>;
@@ -148,6 +168,7 @@
 };
 
 &spi0 {
+	compatible = "nordic,nrf-spi";
 	/* Cannot be used together with i2c0. */
 	/* status = "okay"; */
 	sck-pin = <27>;
@@ -156,6 +177,7 @@
 };
 
 &spi1 {
+	compatible = "nordic,nrf-spi";
 	status = "okay";
 	sck-pin = <31>;
 	mosi-pin = <30>;
@@ -163,28 +185,33 @@
 };
 
 &spi2 {
+	compatible = "nordic,nrf-spi";
 	status = "okay";
 	sck-pin = <19>;
 	mosi-pin = <20>;
 	miso-pin = <21>;
 	cs-gpios = <&gpio0 17 0>, <&gpio1 5 0>;
-	mx25r6435f@0 {
+	mx25r64: mx25r6435f@0 {
 		compatible = "jedec,spi-nor";
 		reg = <0>;
 		spi-max-frequency = <80000000>;
 		label = "MX25R64";
-		jedec-id = <0xc2 0x28 0x17>;
+		jedec-id = [c2 28 17];
 		size = <67108864>;
+		has-be32k;
+		has-dpd;
+		t-enter-dpd = <10000>;
+		dpd-wakeup-sequence = <30000 20 45000>;
 		wp-gpios = <&gpio0 22 0>;
 		hold-gpios = <&gpio0 23 0>;
 	};
 };
 
-&spi3 {
+arduino_spi: &spi3 {
 	status = "okay";
-	sck-pin = <41>;
-	mosi-pin = <42>;
-	miso-pin = <43>;
+	sck-pin = <47>;
+	miso-pin = <46>;
+	mosi-pin = <45>;
 };
 
 &flash0 {

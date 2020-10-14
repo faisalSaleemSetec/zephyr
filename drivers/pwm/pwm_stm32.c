@@ -7,7 +7,7 @@
 #include <errno.h>
 
 #include <soc.h>
-#include <pwm.h>
+#include <drivers/pwm.h>
 #include <device.h>
 #include <kernel.h>
 #include <init.h>
@@ -15,6 +15,9 @@
 #include <clock_control/stm32_clock_control.h>
 
 #include "pwm_stm32.h"
+
+#include <logging/log.h>
+LOG_MODULE_REGISTER(pwm_stm32);
 
 /* convenience defines */
 #define DEV_CFG(dev)							\
@@ -35,7 +38,7 @@ static u32_t __get_tim_clk(u32_t bus_clk,
 	if (pclken->bus == STM32_CLOCK_BUS_APB1) {
 		apb_psc = CONFIG_CLOCK_STM32_APB1_PRESCALER;
 	}
-#ifndef CONFIG_SOC_SERIES_STM32F0X
+#if !defined(CONFIG_SOC_SERIES_STM32F0X) && !defined(CONFIG_SOC_SERIES_STM32G0X)
 	else {
 		apb_psc = CONFIG_CLOCK_STM32_APB2_PRESCALER;
 	}
@@ -160,8 +163,11 @@ static int pwm_stm32_get_cycles_per_sec(struct device *dev, u32_t pwm,
 	}
 
 	/* Timer clock depends on APB prescaler */
-	clock_control_get_rate(data->clock,
-			(clock_control_subsys_t *)&cfg->pclken, &bus_clk);
+	if (clock_control_get_rate(data->clock,
+			(clock_control_subsys_t *)&cfg->pclken, &bus_clk) < 0) {
+		LOG_ERR("Failed call clock_control_get_rate");
+		return -EIO;
+	}
 
 	tim_clk = __get_tim_clk(bus_clk,
 			(clock_control_subsys_t *)&cfg->pclken);

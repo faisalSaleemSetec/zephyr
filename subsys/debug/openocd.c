@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <kernel_structs.h>
+#include <kernel.h>
 
 #define OPENOCD_UNIMPLEMENTED	0xffffffff
 
@@ -56,7 +56,7 @@ size_t _kernel_openocd_offsets[] = {
 #elif defined(CONFIG_NIOS2)
 	[OPENOCD_OFFSET_T_STACK_PTR] = offsetof(struct k_thread,
 						callee_saved.sp),
-#elif defined(CONFIG_RISCV32)
+#elif defined(CONFIG_RISCV)
 	[OPENOCD_OFFSET_T_STACK_PTR] = offsetof(struct k_thread,
 						callee_saved.sp),
 #else

@@ -16,7 +16,7 @@
 #include <kernel.h>
 #include <zephyr/types.h>
 #include <stdbool.h>
-#include <atomic.h>
+#include <sys/atomic.h>
 
 #include <net/net_ip.h>
 #include <net/net_pkt.h>
@@ -25,7 +25,7 @@
 #include <net/lldp.h>
 #endif
 
-#include <misc/util.h>
+#include <sys/util.h>
 #include <net/net_if.h>
 #include <net/ethernet_vlan.h>
 
@@ -264,6 +264,11 @@ struct ethernet_api {
 	/** Send a network packet */
 	int (*send)(struct device *dev, struct net_pkt *pkt);
 };
+
+/* Make sure that the network interface API is properly setup inside
+ * Ethernet API struct (it is the first one).
+ */
+BUILD_ASSERT(offsetof(struct ethernet_api, iface_api) == 0);
 
 /** @cond INTERNAL_HIDDEN */
 struct net_eth_hdr {
@@ -722,14 +727,14 @@ static inline int net_eth_get_ptp_port(struct net_if *iface)
 void net_eth_set_ptp_port(struct net_if *iface, int port);
 #endif /* CONFIG_NET_GPTP */
 
-#include <syscalls/ethernet.h>
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }
 #endif
 
-/**
- * @}
- */
+#include <syscalls/ethernet.h>
 
 #endif /* ZEPHYR_INCLUDE_NET_ETHERNET_H_ */

@@ -61,8 +61,7 @@
 #include <linker/sections.h>
 #include <sys_clock.h>
 #include <drivers/timer/system_timer.h>
-#include <arch/x86/irq_controller.h>
-#include <power.h>
+#include <power/power.h>
 #include <device.h>
 #include <kernel_structs.h>
 
@@ -207,8 +206,8 @@ void timer_int_handler(void *unused /* parameter is not used */
 		"pushl %eax\n\t"
 		"pushl %edx\n\t"
 		"rdtsc\n\t"
-		"mov %eax, __start_tick_time\n\t"
-		"mov %edx, __start_tick_time+4\n\t"
+		"mov %eax, arch_timing_tick_start\n\t"
+		"mov %edx, arch_timing_tick_start+4\n\t"
 		"pop %edx\n\t"
 		"pop %eax\n\t");
 #endif
@@ -294,8 +293,8 @@ void timer_int_handler(void *unused /* parameter is not used */
 		"pushl %eax\n\t"
 		"pushl %edx\n\t"
 		"rdtsc\n\t"
-		"mov %eax, __end_tick_time\n\t"
-		"mov %edx, __end_tick_time+4\n\t"
+		"mov %eax, arch_timing_tick_end\n\t"
+		"mov %edx, arch_timing_tick_end+4\n\t"
 		"pop %edx\n\t"
 		"pop %eax\n\t");
 #endif /* CONFIG_EXECUTION_BENCHMARKING */
@@ -575,7 +574,7 @@ int z_clock_driver_init(struct device *device)
 	/* determine the timer counter value (in timer clock cycles/system tick)
 	 */
 
-	cycles_per_tick = sys_clock_hw_cycles_per_tick();
+	cycles_per_tick = k_ticks_to_cyc_floor32(1);
 
 	tickless_idle_init();
 
@@ -668,7 +667,7 @@ int z_clock_device_ctrl(struct device *port, u32_t ctrl_command,
 	}
 
 	if (cb) {
-		cb(dev, ret, context, arg);
+		cb(port, ret, context, arg);
 	}
 
 	return ret;

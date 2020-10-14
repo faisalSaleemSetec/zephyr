@@ -175,6 +175,10 @@ features:
 +-----------+------------+-------------------------------------+
 | PINMUX    | on-chip    | pinmux                              |
 +-----------+------------+-------------------------------------+
+| I2C       | on-chip    | i2c                                 |
++-----------+------------+-------------------------------------+
+| SPI       | on-chip    | spi                                 |
++-----------+------------+-------------------------------------+
 
 The default configuration can be found in the defconfig file:
 ``boards/arm/stm32mp157c_dk2/stm32mp157c_dk2_defconfig``
@@ -192,11 +196,15 @@ Default Zephyr Peripheral Mapping:
 
 - USART_3 TX/RX : PB10/PB12 (UART console)
 - UART_7 TX/RX : PE8/PE7 (Arduino Serial)
+- I2C5 SCL/SDA : PA11/PA12 (Arduino I2C)
+- SPI4 SCK/MISO/MOSI : PE12/PE13/PE14 (Arduino SPI)
+- SPI5 SCK/MISO/MOSI : PF7/PF8/PF9
 
 System Clock
 ------------
 
-The Cortex®-M4 Core is configured to run at a 209 MHz clock speed.
+The Cortex®-M4 Core is configured to run at a 209 MHz clock speed. This value
+must match the configured mlhclk_ck frequency.
 
 Serial Port
 -----------
@@ -206,7 +214,7 @@ The Zephyr console output is assigned by default to the RAM console to be dumped
 by the Linux Remoteproc Framework on Cortex®-A7 core. In order to keep the UART7
 free for future serial interactions with Arduino shield, the Zephyr UART console
 output is USART3 and is disabled by default. UART console can be enable through
-board's device tree and stm32mp157c_dk2_defconfig board file (or prj.conf
+board's devicetree and stm32mp157c_dk2_defconfig board file (or prj.conf
 project files), and will disable existing RAM console output. Default UART
 console settings are 115200 8N1.
 
@@ -262,8 +270,7 @@ install `stm32mp1 developer package`_.
 
    .. zephyr-app-commands::
       :zephyr-app: samples/hello_world
-      :tool: all
-      :board: stm32mp157_dk2
+      :board: stm32mp157c_dk2
       :goals: debug
 
 .. _STM32P157C Discovery website:

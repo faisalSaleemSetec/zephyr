@@ -6,8 +6,8 @@
 
 #include <zephyr.h>
 #include <device.h>
-#include <sensor.h>
-#include <misc/printk.h>
+#include <drivers/sensor.h>
+#include <sys/printk.h>
 
 void main(void)
 {
@@ -30,6 +30,6 @@ void main(void)
 			co2.val1, co2.val2,
 			voc.val1, voc.val2);
 
-		k_sleep(1000);
+		k_sleep(K_MSEC(1000));
 	}
 }

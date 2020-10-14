@@ -10,8 +10,8 @@
 
 #include <errno.h>
 #include <sys/types.h>
-#include <misc/byteorder.h>
-#include <misc/__assert.h>
+#include <sys/byteorder.h>
+#include <sys/__assert.h>
 
 #include <bluetooth/sdp.h>
 
@@ -68,8 +68,8 @@ static u8_t num_services;
 static struct bt_sdp bt_sdp_pool[CONFIG_BT_MAX_CONN];
 
 /* Pool for outgoing SDP packets */
-NET_BUF_POOL_DEFINE(sdp_pool, CONFIG_BT_MAX_CONN,
-		    BT_L2CAP_BUF_SIZE(SDP_MTU), BT_BUF_USER_DATA_MIN, NULL);
+NET_BUF_POOL_FIXED_DEFINE(sdp_pool, CONFIG_BT_MAX_CONN,
+			  BT_L2CAP_BUF_SIZE(SDP_MTU), NULL);
 
 #define SDP_CLIENT_CHAN(_ch) CONTAINER_OF(_ch, struct bt_sdp_client, chan.chan)
 
@@ -1422,7 +1422,7 @@ void bt_sdp_init(void)
 	static struct bt_l2cap_server server = {
 		.psm = SDP_PSM,
 		.accept = bt_sdp_accept,
-		.sec_level = BT_SECURITY_NONE,
+		.sec_level = BT_SECURITY_L0,
 	};
 	int res;
 

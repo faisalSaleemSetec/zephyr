@@ -5,7 +5,7 @@
  */
 
 #include <device.h>
-#include <sensor.h>
+#include <drivers/sensor.h>
 #include <stdio.h>
 #include <zephyr.h>
 
@@ -41,6 +41,6 @@ void main(void)
 		printf("Temperature: %d.%06d, Pressure: %d.%06d\n", temp.val1,
 		       temp.val2, press.val1, press.val2);
 
-		k_sleep(10000);
+		k_sleep(K_MSEC(10000));
 	}
 }

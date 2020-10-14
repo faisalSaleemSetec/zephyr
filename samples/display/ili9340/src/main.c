@@ -6,7 +6,7 @@
  */
 
 #include <device.h>
-#include <display.h>
+#include <drivers/display.h>
 #include <stdio.h>
 #include <string.h>
 #include <zephyr.h>
@@ -138,6 +138,6 @@ void main(void)
 		if (color > 2) {
 			color = 0;
 		}
-		k_sleep(500);
+		k_sleep(K_MSEC(500));
 	}
 }

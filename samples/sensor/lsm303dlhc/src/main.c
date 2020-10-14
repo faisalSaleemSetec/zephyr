@@ -6,9 +6,9 @@
 
 #include <zephyr.h>
 #include <device.h>
-#include <sensor.h>
+#include <drivers/sensor.h>
 #include <stdio.h>
-#include <misc/util.h>
+#include <sys/util.h>
 
 static s32_t read_sensor(struct device *sensor, enum sensor_channel channel)
 {
@@ -65,6 +65,6 @@ void main(void)
 			printf("Failed to read accelerometer data\n");
 		}
 
-		k_sleep(2000);
+		k_sleep(K_MSEC(2000));
 	}
 }

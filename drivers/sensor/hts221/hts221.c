@@ -4,18 +4,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <i2c.h>
+#include <drivers/i2c.h>
 #include <init.h>
-#include <misc/__assert.h>
-#include <misc/byteorder.h>
-#include <sensor.h>
+#include <sys/__assert.h>
+#include <sys/byteorder.h>
+#include <drivers/sensor.h>
 #include <string.h>
 #include <logging/log.h>
 
 #include "hts221.h"
 
-#define LOG_LEVEL CONFIG_SENSOR_LOG_LEVEL
-LOG_MODULE_REGISTER(HTS221);
+LOG_MODULE_REGISTER(HTS221, CONFIG_SENSOR_LOG_LEVEL);
 
 static const char * const hts221_odr_strings[] = {
 	"1", "7", "12.5"
@@ -158,7 +157,7 @@ int hts221_init(struct device *dev)
 	 * the device requires about 2.2 ms to download the flash content
 	 * into the volatile mem
 	 */
-	k_sleep(3);
+	k_sleep(K_MSEC(3));
 
 	if (hts221_read_conversion_data(drv_data) < 0) {
 		LOG_ERR("Failed to read conversion data.");

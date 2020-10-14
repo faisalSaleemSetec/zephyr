@@ -14,15 +14,18 @@
 
 #include <kernel.h>
 #include <arch/cpu.h>
-#include <misc/__assert.h>
+#include <sys/__assert.h>
 #include <soc.h>
 #include <init.h>
-#include <uart.h>
-#include <clock_control.h>
+#include <drivers/uart.h>
+#include <drivers/clock_control.h>
 
 #include <linker/sections.h>
 #include <clock_control/stm32_clock_control.h>
 #include "uart_stm32.h"
+
+#include <logging/log.h>
+LOG_MODULE_REGISTER(uart_stm32);
 
 /* convenience defines */
 #define DEV_CFG(dev)							\
@@ -43,10 +46,12 @@ static inline void uart_stm32_set_baudrate(struct device *dev, u32_t baud_rate)
 	u32_t clock_rate;
 
 	/* Get clock rate */
-	clock_control_get_rate(data->clock,
+	if (clock_control_get_rate(data->clock,
 			       (clock_control_subsys_t *)&config->pclken,
-			       &clock_rate);
-
+			       &clock_rate) < 0) {
+		LOG_ERR("Failed call clock_control_get_rate");
+		return;
+	}
 
 
 #ifdef CONFIG_LPUART_1
@@ -518,7 +523,7 @@ static int uart_stm32_irq_tx_complete(struct device *dev)
 {
 	USART_TypeDef *UartInstance = UART_STRUCT(dev);
 
-	return LL_USART_IsActiveFlag_TXE(UartInstance);
+	return LL_USART_IsActiveFlag_TC(UartInstance);
 }
 
 static void uart_stm32_irq_rx_enable(struct device *dev)
@@ -815,9 +820,11 @@ STM32_UART_INIT(UART_10)
 
 #endif
 
-#if defined(CONFIG_SOC_SERIES_STM32L4X) || \
-    defined(CONFIG_SOC_SERIES_STM32L0X) || \
-    defined(CONFIG_SOC_SERIES_STM32WBX)
+#if defined(CONFIG_SOC_SERIES_STM32H7X) || \
+	defined(CONFIG_SOC_SERIES_STM32L4X) || \
+	defined(CONFIG_SOC_SERIES_STM32L0X) || \
+	defined(CONFIG_SOC_SERIES_STM32WBX) || \
+	defined(CONFIG_SOC_SERIES_STM32G4X)
 #ifdef CONFIG_LPUART_1
 STM32_UART_INIT(LPUART_1)
 #endif /* CONFIG_LPUART_1 */

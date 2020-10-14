@@ -15,7 +15,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <misc/byteorder.h>
+#include <sys/byteorder.h>
 #include <zephyr.h>
 
 #include <settings/settings.h>
@@ -38,8 +38,8 @@
 #define L2CAP_POLICY_WHITELIST		0x01
 #define L2CAP_POLICY_16BYTE_KEY		0x02
 
-NET_BUF_POOL_DEFINE(data_tx_pool, 1, DATA_MTU, BT_BUF_USER_DATA_MIN, NULL);
-NET_BUF_POOL_DEFINE(data_rx_pool, 1, DATA_MTU, BT_BUF_USER_DATA_MIN, NULL);
+NET_BUF_POOL_FIXED_DEFINE(data_tx_pool, 1, DATA_MTU, NULL);
+NET_BUF_POOL_FIXED_DEFINE(data_rx_pool, 1, DATA_MTU, NULL);
 
 static u8_t l2cap_policy;
 static struct bt_conn *l2cap_whitelist[CONFIG_BT_MAX_CONN];
@@ -62,7 +62,7 @@ static int l2cap_recv_metrics(struct bt_l2cap_chan *chan, struct net_buf *buf)
 	u32_t delta;
 
 	delta = k_cycle_get_32() - cycle_stamp;
-	delta = SYS_CLOCK_HW_CYCLES_TO_NS(delta);
+	delta = (u32_t)k_cyc_to_ns_floor64(delta);
 
 	/* if last data rx-ed was greater than 1 second in the past,
 	 * reset the metrics.
@@ -414,7 +414,7 @@ SHELL_STATIC_SUBCMD_SET_CREATE(whitelist_cmds,
 );
 
 SHELL_STATIC_SUBCMD_SET_CREATE(l2cap_cmds,
-	SHELL_CMD_ARG(connect, NULL, "<psm>", cmd_connect, 1, 0),
+	SHELL_CMD_ARG(connect, NULL, "<psm>", cmd_connect, 2, 0),
 	SHELL_CMD_ARG(disconnect, NULL, HELP_NONE, cmd_disconnect, 1, 0),
 	SHELL_CMD_ARG(metrics, NULL, "<value on, off>", cmd_metrics, 2, 0),
 	SHELL_CMD_ARG(recv, NULL, "[delay (in miliseconds)", cmd_recv, 1, 1),
@@ -440,4 +440,3 @@ static int cmd_l2cap(const struct shell *shell, size_t argc, char **argv)
 
 SHELL_CMD_ARG_REGISTER(l2cap, &l2cap_cmds, "Bluetooth L2CAP shell commands",
 		       cmd_l2cap, 1, 1);
-

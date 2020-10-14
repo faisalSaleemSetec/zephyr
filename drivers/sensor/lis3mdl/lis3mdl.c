@@ -4,18 +4,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <i2c.h>
+#include <drivers/i2c.h>
 #include <init.h>
-#include <misc/__assert.h>
-#include <misc/byteorder.h>
-#include <sensor.h>
+#include <sys/__assert.h>
+#include <sys/byteorder.h>
+#include <drivers/sensor.h>
 #include <string.h>
 #include <logging/log.h>
 
 #include "lis3mdl.h"
 
-#define LOG_LEVEL CONFIG_SENSOR_LOG_LEVEL
-LOG_MODULE_REGISTER(LIS3MDL);
+LOG_MODULE_REGISTER(LIS3MDL, CONFIG_SENSOR_LOG_LEVEL);
 
 static void lis3mdl_convert(struct sensor_value *val, s16_t raw_val,
 			    u16_t divider)

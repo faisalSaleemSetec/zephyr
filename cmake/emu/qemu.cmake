@@ -2,6 +2,8 @@
 
 if("${ARCH}" STREQUAL "x86")
   set_ifndef(QEMU_binary_suffix i386)
+elseif(DEFINED QEMU_ARCH)
+  set_ifndef(QEMU_binary_suffix ${QEMU_ARCH})
 else()
   set_ifndef(QEMU_binary_suffix ${ARCH})
 endif()
@@ -75,12 +77,15 @@ endif()
 # If we are running a networking application in QEMU, then set proper
 # QEMU variables. This also allows two QEMUs to be hooked together and
 # pass data between them. The QEMU flags are not set for standalone
-# tests defined by CONFIG_NET_TEST.
+# tests defined by CONFIG_NET_TEST. For PPP, the serial port file is
+# not available if we run unit tests which define CONFIG_NET_TEST.
 if(CONFIG_NETWORKING)
   if(CONFIG_NET_QEMU_SLIP)
     if((CONFIG_NET_SLIP_TAP) OR (CONFIG_IEEE802154_UPIPE))
       set(QEMU_NET_STACK 1)
     endif()
+  elseif((CONFIG_NET_QEMU_PPP) AND NOT (CONFIG_NET_TEST))
+      set(QEMU_NET_STACK 1)
   endif()
 endif()
 
@@ -143,15 +148,28 @@ elseif(QEMU_NET_STACK)
       # appending the instance name to the pid file we can easily run more
       # instances of the same sample.
 
-      if(${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
-        set(tmp_file unix:/tmp/slip.sock\${QEMU_INSTANCE})
+      if(CONFIG_NET_QEMU_PPP)
+	if(${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
+	  set(ppp_path unix:/tmp/ppp\${QEMU_INSTANCE})
+	else()
+	  set(ppp_path unix:/tmp/ppp${QEMU_INSTANCE})
+	endif()
+
+	list(APPEND MORE_FLAGS_FOR_${target}
+          -serial ${ppp_path}
+          )
       else()
-        set(tmp_file unix:/tmp/slip.sock${QEMU_INSTANCE})
+	if(${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
+          set(tmp_file unix:/tmp/slip.sock\${QEMU_INSTANCE})
+	else()
+          set(tmp_file unix:/tmp/slip.sock${QEMU_INSTANCE})
+	endif()
+
+	list(APPEND MORE_FLAGS_FOR_${target}
+          -serial ${tmp_file}
+          )
       endif()
 
-      list(APPEND MORE_FLAGS_FOR_${target}
-        -serial ${tmp_file}
-        )
     endif()
   endforeach()
 
@@ -215,24 +233,28 @@ elseif(QEMU_NET_STACK)
   endif()
 endif(QEMU_PIPE_STACK)
 
-if(CONFIG_X86_IAMCU)
-  list(APPEND PRE_QEMU_COMMANDS
-    COMMAND
-    ${PYTHON_EXECUTABLE}
-    ${ZEPHYR_BASE}/scripts/qemu-machine-hack.py
-    $<TARGET_FILE:${logical_target_for_zephyr_elf}>
-    )
-endif()
-
 if(CONFIG_X86_64)
+  # QEMU doesn't like 64-bit ELF files. Since we don't use any >4GB
+  # addresses, converting it to 32-bit is safe enough for emulation.
   set(QEMU_KERNEL_FILE "${CMAKE_BINARY_DIR}/zephyr-qemu.elf")
+  add_custom_target(qemu_kernel_target
+    COMMAND
+    ${CMAKE_OBJCOPY}
+    -O elf32-i386
+    $<TARGET_FILE:${logical_target_for_zephyr_elf}>
+    ${CMAKE_BINARY_DIR}/zephyr-qemu.elf
+    DEPENDS ${logical_target_for_zephyr_elf}
+    )
 endif()
 
 if(NOT QEMU_PIPE)
   set(QEMU_PIPE_COMMENT "\nTo exit from QEMU enter: 'CTRL+a, x'\n")
 endif()
 
-if(CONFIG_SMP)
+# Don't just test CONFIG_SMP, there is at least one test of the lower
+# level multiprocessor API that wants an auxiliary CPU but doesn't
+# want SMP using it.
+if(NOT CONFIG_MP_NUM_CPUS MATCHES "1")
   list(APPEND QEMU_SMP_FLAGS -smp cpus=${CONFIG_MP_NUM_CPUS})
 endif()
 

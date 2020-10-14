@@ -19,7 +19,7 @@ import yaml
 import pykwalify.core
 import subprocess
 import re
-from pathlib import PurePath
+from pathlib import Path, PurePath
 
 METADATA_SCHEMA = '''
 ## A pykwalify schema for basic validation of the structure of a
@@ -59,45 +59,43 @@ def process_module(module, cmake_out=None, kconfig_out=None):
     cmake_setting = None
     kconfig_setting = None
 
-    module_yml = os.path.join(module, 'zephyr/module.yml')
-    if os.path.isfile(module_yml):
-        with open(module_yml, 'r') as f:
+    module_path = PurePath(module)
+    module_yml = module_path.joinpath('zephyr/module.yml')
+    if Path(module_yml).is_file():
+        with Path(module_yml).open('r') as f:
             meta = yaml.safe_load(f.read())
 
         try:
             pykwalify.core.Core(source_data=meta, schema_data=schema)\
                 .validate()
         except pykwalify.errors.SchemaError as e:
-            print('ERROR: Malformed "build" section in file: {}\n{}'
-                  .format(module_yml, e), file=sys.stderr)
-            sys.exit(1)
+            sys.exit('ERROR: Malformed "build" section in file: {}\n{}'
+                     .format(module_yml.as_posix(), e))
 
         section = meta.get('build', dict())
         cmake_setting = section.get('cmake', None)
         if not validate_setting(cmake_setting, module, 'CMakeLists.txt'):
-            print('ERROR: "cmake" key in {} has folder value "{}" which '
-                  'does not contain a CMakeLists.txt file.'
-                  .format(module_yml, cmake_setting), file=sys.stderr)
-            sys.exit(1)
+            sys.exit('ERROR: "cmake" key in {} has folder value "{}" which '
+                     'does not contain a CMakeLists.txt file.'
+                     .format(module_yml.as_posix(), cmake_setting))
 
         kconfig_setting = section.get('kconfig', None)
         if not validate_setting(kconfig_setting, module):
-            print('ERROR: "kconfig" key in {} has value "{}" which does not '
-                  'point to a valid Kconfig file.'
-                  .format(module_yml, kconfig_setting), file=sys.stderr)
-            sys.exit(1)
+            sys.exit('ERROR: "kconfig" key in {} has value "{}" which does '
+                     'not point to a valid Kconfig file.'
+                     .format(module_yml.as_posix(), kconfig_setting))
 
-    cmake_path = os.path.join(module, cmake_setting or 'zephyr')
-    cmake_file = os.path.join(cmake_path, 'CMakeLists.txt')
-    if os.path.isfile(cmake_file) and cmake_out is not None:
-        cmake_out.write('\"{}\":\"{}\"\n'.format(os.path.basename(module),
-                                                 os.path.abspath(cmake_path)))
+    cmake_path = module_path.joinpath(cmake_setting or 'zephyr')
+    cmake_file = cmake_path.joinpath('CMakeLists.txt')
+    if Path(cmake_file).is_file() and cmake_out is not None:
+        cmake_out.write('\"{}\":\"{}\"\n'
+                        .format(module_path.name,
+                                Path(cmake_path).resolve().as_posix()))
 
-    kconfig_file = os.path.join(module, kconfig_setting or 'zephyr/Kconfig')
-    if os.path.isfile(kconfig_file) and kconfig_out is not None:
+    kconfig_file = module_path.joinpath(kconfig_setting or 'zephyr/Kconfig')
+    if Path(kconfig_file).is_file() and kconfig_out is not None:
         kconfig_out.write('osource "{}"\n\n'
-                          .format(PurePath(
-                              os.path.abspath(kconfig_file)).as_posix()))
+                          .format(Path(kconfig_file).resolve().as_posix()))
 
 
 def main():
@@ -130,7 +128,8 @@ def main():
         out, err = p.communicate()
         if p.returncode == 0:
             projects = out.decode(sys.getdefaultencoding()).splitlines()
-        elif re.match(r'Error: .* is not in a west installation\..*',
+        elif re.match((r'Error: .* is not in a west installation\.'
+                       '|FATAL ERROR: no west installation found from .*'),
                       err.decode(sys.getdefaultencoding())):
             # Only accept the error from bootstrapper in the event we are
             # outside a west managed project.
@@ -147,10 +146,10 @@ def main():
         projects += args.extra_modules
 
     if args.kconfig_out:
-        kconfig_out_file = open(args.kconfig_out, 'w')
+        kconfig_out_file = open(args.kconfig_out, 'w', encoding="utf-8")
 
     if args.cmake_out:
-        cmake_out_file = open(args.cmake_out, 'w')
+        cmake_out_file = open(args.cmake_out, 'w', encoding="utf-8")
 
     try:
         for project in projects:

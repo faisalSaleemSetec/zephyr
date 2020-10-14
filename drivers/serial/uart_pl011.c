@@ -9,8 +9,7 @@
 #include <init.h>
 #include <device.h>
 #include <soc.h>
-#include <uart.h>
-#include <arch/arm/cortex_m/cmsis.h>
+#include <drivers/uart.h>
 
 
 /*
@@ -328,6 +327,7 @@ static void pl011_irq_callback_set(struct device *dev,
 	DEV_DATA(dev)->irq_cb = cb;
 	DEV_DATA(dev)->irq_cb_data = cb_data;
 }
+#endif /* CONFIG_UART_INTERRUPT_DRIVEN */
 
 static const struct uart_driver_api pl011_driver_api = {
 	.poll_in = pl011_poll_in,
@@ -354,15 +354,14 @@ static int pl011_init(struct device *dev)
 {
 	int ret;
 	u32_t lcrh;
-	const struct uart_device_config *config = dev->config->config_info;
 
 	/* disable the uart */
 	pl011_disable(dev);
 	pl011_disable_fifo(dev);
 
 	/* Set baud rate */
-	ret = pl011_set_baudrate(dev, CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC,
-					DEV_DATA(dev)->baud_rate);
+	ret = pl011_set_baudrate(dev, DEV_CFG(dev)->sys_clk_freq,
+				      DEV_DATA(dev)->baud_rate);
 	if (ret != 0) {
 		return ret;
 	}
@@ -387,12 +386,14 @@ static int pl011_init(struct device *dev)
 	__ISB();
 
 #ifdef CONFIG_UART_INTERRUPT_DRIVEN
-	config->irq_config_func(dev);
+	DEV_CFG(dev)->irq_config_func(dev);
 #endif
 	pl011_enable(dev);
 
 	return 0;
 }
+
+#ifdef CONFIG_UART_INTERRUPT_DRIVEN
 void pl011_isr(void *arg)
 {
 	struct device *dev = arg;
@@ -414,7 +415,7 @@ static void pl011_irq_config_func_0(struct device *dev);
 
 static struct uart_device_config pl011_cfg_port_0 = {
 	.base = (u8_t *)DT_PL011_PORT0_BASE_ADDRESS,
-	.sys_clk_freq = CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC,
+	.sys_clk_freq = DT_PL011_PORT0_CLOCK_FREQUENCY,
 #ifdef CONFIG_UART_INTERRUPT_DRIVEN
 	.irq_config_func = pl011_irq_config_func_0,
 #endif
@@ -468,7 +469,7 @@ static void pl011_irq_config_func_1(struct device *dev);
 
 static struct uart_device_config pl011_cfg_port_1 = {
 	.base = (u8_t *)DT_PL011_PORT1_BASE_ADDRESS,
-	.sys_clk_freq = CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC,
+	.sys_clk_freq = DT_PL011_PORT1_CLOCK_FREQUENCY,
 #ifdef CONFIG_UART_INTERRUPT_DRIVEN
 	.irq_config_func = pl011_irq_config_func_1,
 #endif

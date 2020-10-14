@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 #include <timestamp.h>
-
+#include <kernel_internal.h>
 
 #define CALCULATE_TIME(special_char, profile, name)			     \
 	{								     \
@@ -133,12 +133,12 @@ static inline void benchmark_timer_init(void)  {       }
 static inline void benchmark_timer_stop(void)  {       }
 static inline void benchmark_timer_start(void) {       }
 
-#define CYCLES_TO_NS(x) SYS_CLOCK_HW_CYCLES_TO_NS(x)
+#define CYCLES_TO_NS(x) (u32_t)k_cyc_to_ns_floor64(x)
 
 /* Get Core Frequency in MHz */
 static inline u32_t get_core_freq_MHz(void)
 {
-	return  (CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC/1000000);
+	return  (sys_clock_hw_cycles_per_sec() / 1000000);
 }
 
 #define PRINT_STATS(x, y, z)   PRINT_F(x, y, z)
@@ -201,15 +201,6 @@ void mutex_bench(void);
 void msg_passing_bench(void);
 void userspace_bench(void);
 
-/******************************************************************************/
-/* External variables */
-extern u64_t __start_swap_time;
-extern u64_t __end_swap_time;
-extern u64_t __start_intr_time;
-extern u64_t __end_intr_time;
-extern u64_t __start_tick_time;
-extern u64_t __end_tick_time;
-/******************************************************************************/
 #ifdef CONFIG_USERSPACE
 #include <syscall_handler.h>
 __syscall int k_dummy_syscall(void);

@@ -10,7 +10,7 @@
  *
  */
 
-#include <misc/__assert.h>
+#include <sys/__assert.h>
 #include <kernel.h>
 #include <arch/cpu.h>
 #include <drivers/interrupt_controller/ioapic.h>
@@ -43,7 +43,7 @@
  * @param flags interrupt flags
  *
  */
-void __irq_controller_irq_config(unsigned int vector, unsigned int irq,
+void z_irq_controller_irq_config(unsigned int vector, unsigned int irq,
 				 u32_t flags)
 {
 	__ASSERT(irq <= HARDWARE_IRQ_LIMIT, "invalid irq line");
@@ -72,7 +72,7 @@ void __irq_controller_irq_config(unsigned int vector, unsigned int irq,
  *
  * @return N/A
  */
-void z_arch_irq_enable(unsigned int irq)
+void arch_irq_enable(unsigned int irq)
 {
 	if (IS_IOAPIC_IRQ(irq)) {
 		z_ioapic_irq_enable(irq);
@@ -92,7 +92,7 @@ void z_arch_irq_enable(unsigned int irq)
  *
  * @return N/A
  */
-void z_arch_irq_disable(unsigned int irq)
+void arch_irq_disable(unsigned int irq)
 {
 	if (IS_IOAPIC_IRQ(irq)) {
 		z_ioapic_irq_disable(irq);
@@ -100,4 +100,3 @@ void z_arch_irq_disable(unsigned int irq)
 		z_loapic_irq_disable(irq - LOAPIC_IRQ_BASE);
 	}
 }
-

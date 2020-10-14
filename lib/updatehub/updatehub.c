@@ -17,12 +17,12 @@ LOG_MODULE_REGISTER(updatehub);
 #include <net/udp.h>
 #include <net/coap.h>
 #include <net/dns_resolve.h>
-#include <flash.h>
-#include <misc/reboot.h>
+#include <drivers/flash.h>
+#include <power/reboot.h>
 #include <tinycrypt/sha256.h>
-#include <json.h>
+#include <data/json.h>
 
-#include <updatehub.h>
+#include "include/updatehub.h"
 #include "updatehub_priv.h"
 #include "updatehub_firmware.h"
 #include "updatehub_device.h"
@@ -802,6 +802,5 @@ void updatehub_autohandler(void)
 	static struct k_delayed_work work;
 
 	k_delayed_work_init(&work, autohandler);
-	k_delayed_work_submit(&work, 0);
+	k_delayed_work_submit(&work, K_NO_WAIT);
 }
-

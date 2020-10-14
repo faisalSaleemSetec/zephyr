@@ -1,9 +1,7 @@
-# Kconfig - FRDM-K64F board
-#
+# FRDM-K64F board
+
 # Copyright (c) 2016, Freescale Semiconductor, Inc.
-#
 # SPDX-License-Identifier: Apache-2.0
-#
 
 if BOARD_FRDM_K64F
 
@@ -107,5 +105,12 @@ config ETH_MCUX_0
 	default y if NET_L2_ETHERNET
 
 endif # NETWORKING
+
+if CAN
+
+config CAN_0
+	default y
+
+endif # CAN
 
 endif # BOARD_FRDM_K64F

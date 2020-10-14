@@ -11,7 +11,7 @@
  * after having been loaded into RAM.
  */
 
-#include <arch/x86/asm.h>
+#include <arch/x86/ia32/asm.h>
 #include <arch/x86/msr.h>
 #include <kernel_arch_data.h>
 #include <arch/cpu.h>
@@ -20,9 +20,10 @@
 	/* exports (private APIs) */
 
 	GTEXT(__start)
+	GTEXT(z_x86_enable_paging)
 
 	/* externs */
-	GTEXT(z_cstart)
+	GTEXT(z_x86_prep_c)
 
 	GDATA(_idt_base_address)
 	GDATA(_interrupt_stack)
@@ -36,144 +37,13 @@
 	GDATA(_sse_mxcsr_default_value)
 #endif
 
-#if defined(CONFIG_BOOT_TIME_MEASUREMENT)
-	GDATA(__start_time_stamp)
-#endif
-
 #ifdef CONFIG_SYS_POWER_DEEP_SLEEP_STATES
 	GTEXT(_sys_resume_from_deep_sleep)
 #endif
 
-#ifdef CONFIG_REALMODE
-
-#define RM_CODE_SEG             0x8
-#define RM_DATA_SEG             0x18
-#define X86_CR0_PE              0x00000001
-#define X86_CR0_WP              0x00010000
-#define X86_CR4_PSE             0x00000010
-
-	.code16
-	.section ".boot", "ax"
-
-	.globl __jh_entry
-__jh_entry:
-	lgdtl %cs:gdt_ptr
-
-	mov %cr0,%eax
-	or $X86_CR0_PE,%al
-	mov %eax,%cr0
-
-	ljmpl $RM_CODE_SEG,$start32
-
-	.code32
-start32:
-	/*
-	 * Minimal bootstrap into 32-bit mode, just to jump to
-	 * __start
-	 */
-
-	/* 4Mb pages */
-	mov %cr4,%eax
-	or $X86_CR4_PSE,%eax
-	mov %eax,%cr4
-
-	/* Enable write protect and protected mode */
-	mov $(X86_CR0_WP | X86_CR0_PE),%eax
-	mov %eax,%cr0
-
-	movl $X86_MTRR_DEF_TYPE_MSR,%ecx
-	rdmsr
-	or $X86_MTRR_DEF_TYPE_MSR_ENABLE,%eax
-	wrmsr
-
-	mov $RM_DATA_SEG,%eax
-	mov %eax,%ds
-	mov %eax,%es
-	mov %eax,%ss
-
-	ljmp $RM_CODE_SEG, $__start
-
-	.global loader_gdt
-loader_gdt:
-	.quad 0
-
-	/* Boot entry 1 (selector=0x0): 32-bit code descriptor: DPL0 */
-
-	.word   0xffff		/* limit: xffff */
-	.word   0x0000		/* base : xxxx0000 */
-	.byte   0x00		/* base : xx00xxxx */
-	.byte   0x9b		/* Accessed, Code e/r, Present, DPL0 */
-	.byte   0xcf		/* limit: fxxxx, Page Gra, 32bit */
-	.byte   0x00		/* base : 00xxxxxx */
-
-	/* Boot entry 2 (selector=0x0): 16-bit code descriptor: DPL0 */
-
-	.word   0xffff		/* limit: xffff */
-	.word   0x0000		/* base : xxxx0000 */
-	.byte   0x00		/* base : xx00xxxx */
-	.byte   0x9b		/* Accessed, Code e/r, Present, DPL0 */
-	.byte   0x8f		/* limit: fxxxx, Byte Gra, 16bit */
-	.byte   0x00		/* base : 00xxxxxx */
-
-	/* Boot entry 3 (selector=0x0): Data descriptor: DPL0 */
-
-	.word   0xffff		/* limit: xffff */
-	.word   0x0000		/* base : xxxx0000 */
-	.byte   0x00		/* base : xx00xxxx */
-	.byte   0x93		/* Accessed, Data r/w, Present, DPL0 */
-	.byte   0xcf		/* limit: fxxxx, Page Gra, 32bit */
-	.byte   0x00		/* base : 00xxxxxx */
-gdt_ptr:
-	.short gdt_ptr - loader_gdt - 1
-	.long loader_gdt
-
-	.pushsection ".rodata"
-
-	.align(4096)
-
-	.popsection
-#endif /* CONFIG_REALMODE */
-
-	/* processor is executing in 32-bit protected mode */
-
-	.balign 16,0x90
-
 SECTION_FUNC(TEXT_START, __start)
 
-#ifdef CONFIG_X86_MULTIBOOT_INFO
-	/*
-	 * If we were loaded by a multiboot-compliant loader, then EAX
-	 * contains X86_MULTIBOOT_EAX_MAGIC and EBX points to a 'struct
-	 * x86_multiboot_info' somewhere in memory that the kernel load
-	 * image doesn't claim. Since the kernel will consider such memory
-	 * "free", we must copy the contents of the struct before the kernel
-	 * decides to use that RAM for something else. However, we can't
-	 * effect the copy until after the BSS is initialized.
-	 *
-	 * EBX isn't touched until the copy is made; even function calls will
-	 * preserve it (it's callee-save in the SysV ABI). But EAX will be
-	 * clobbered, so we check for the magic now and leave a sentinel in
-	 * EBX (0) if the multiboot data isn't valid.
-	 */
-
-	cmpl $X86_MULTIBOOT_EAX_MAGIC, %eax
-	je 1f
-	xorl %ebx, %ebx
-1:
-#endif
-
-#ifdef CONFIG_BOOT_TIME_MEASUREMENT
-	/*
-	 * Record BootTime from start of Kernel.
-	 * Store value temporarily in Register edi & esi and
-         * write to memory once memory access is allowed.
-         * That is, once the data segment register has been setup to access
-         * the .data/.rodata/.bss section of the linked image.
-	 */
-        rdtsc
-        mov  %eax, %esi			/* low  value */
-        mov  %edx, %edi			/* high value */
-#endif
+#include "../common.S"
 
 	/* Enable write-back caching by clearing the NW and CD bits */
 	movl	%cr0, %eax
@@ -214,14 +84,6 @@ SECTION_FUNC(TEXT_START, __start)
 __csSet:
 #endif /* CONFIG_SET_GDT */
 
-
-#ifdef CONFIG_BOOT_TIME_MEASUREMENT
-	/*
-	 * Store rdtsc result from temporary regiter ESI & EDI into memory.
-	 */
-        mov  %esi, __start_time_stamp  	/* low  value */
-        mov  %edi, __start_time_stamp+4    	/* high value */
-#endif
 
 #if !defined(CONFIG_FLOAT)
 	/*
@@ -367,68 +229,19 @@ __csSet:
 	lgdt	%ds:_gdt
 #endif
 
-#ifdef CONFIG_X86_MMU
-
-	/* load the page directory address into the registers*/
-	movl $z_x86_kernel_pdpt, %eax
-	movl %eax, %cr3
-
-	/* Enable PAE */
-	movl %cr4, %eax
-	orl $CR4_PAE_ENABLE, %eax
-	movl %eax, %cr4
-
-	/* IA32_EFER NXE bit set */
-	movl $0xC0000080, %ecx
-	rdmsr
-	orl $0x800, %eax
-	wrmsr
-
-	/* Enable paging (CR0.PG, bit 31) / write protect (CR0.WP, bit 16) */
-	movl %cr0, %eax
-	orl $CR0_PG_WP_ENABLE, %eax
-	movl %eax, %cr0
-
-#endif /* CONFIG_X86_MMU */
-
 #if defined(CONFIG_X86_ENABLE_TSS)
 	mov $MAIN_TSS, %ax
 	ltr %ax
 #endif
 	lidt	z_x86_idt		/* load 32-bit operand size IDT */
 
-#if defined(CONFIG_X86_MULTIBOOT_INFO)
-	/*
-	 * If EBX isn't 0, then it points to a valid boot information
-	 * struct. Copy it to x86_multiboot_info before it's overwritten.
-	 */
-
-	testl	%ebx, %ebx
-	jz	1f
-	movl	$__X86_MULTIBOOT_INFO_SIZEOF, %ecx
-	movl	%ebx, %esi
-	movl	$x86_multiboot_info, %edi
-	cld	/* to be safe. should still be 0 from BSS clear, though */
-	rep
-	movsb
-1:
+#ifdef CONFIG_LOAPIC
+	call	z_loapic_enable
 #endif
 
-#if defined(CONFIG_PIC_DISABLE)
-	/*
-	 * "Disable" legacy i8259 interrupt controllers. Note that we
-	 * can't actually disable them, but we mask all their interrupt
-	 * sources which is effectively the same thing (almost).
-	 */
-	movb $0xff, %al		/* all bits set = mask all interrupts */
-	outb %al, $0x21		/* set i8259 master mask (IRQs 0-7) */
-	outb %al, $0xA1		/* set i8259 slave mask (IRQs 8-15) */
-#endif
-
-	/* Jump to C portion of kernel initialization and never return */
-
-	jmp	z_cstart
-
+	pushl	%ebx		/* pointer to multiboot info, or NULL */
+	pushl	%eax		/* junk, unused argument */
+	call	z_x86_prep_c	/* enter kernel; never returns */
 
 _x86_bss_zero:
 	/* ECX = size, EDI = starting address */
@@ -493,6 +306,31 @@ dataWords:
 	ret
 #endif /* CONFIG_XIP */
 
+#ifdef CONFIG_X86_MMU
+z_x86_enable_paging:
+	/* load the page directory address into the registers*/
+	movl $z_x86_kernel_ptables, %eax
+	movl %eax, %cr3
+
+	/* Enable PAE */
+	movl %cr4, %eax
+	orl $CR4_PAE, %eax
+	movl %eax, %cr4
+
+	/* IA32_EFER NXE bit set */
+	movl $0xC0000080, %ecx
+	rdmsr
+	orl $0x800, %eax
+	wrmsr
+
+	/* Enable paging (CR0.PG, bit 31) / write protect (CR0.WP, bit 16) */
+	movl %cr0, %eax
+	orl $(CR0_PG | CR0_WP), %eax
+	movl %eax, %cr0
+
+	ret
+#endif /* CONFIG_X86_MMU */
+
 #if defined(CONFIG_SSE)
 
 	/* SSE control & status register initial value */
@@ -515,29 +353,6 @@ z_x86_idt:
 
 	.long	_idt_base_address		/* physical start address */
 
-
-#ifdef CONFIG_X86_MULTIBOOT
-	/*
-	 * The multiboot header must be in the first 8 Kb of the kernel image
-	 * (not including the ELF section header(s)) and be aligned on a
-	 * 4 byte boundary. See include/arch/x86/multiboot.h for more info.
-	 */
-
-	.balign 4,0x90
-
-	.long	X86_MULTIBOOT_HEADER_MAGIC
-	.long	X86_MULTIBOOT_HEADER_FLAGS
-	.long	-(X86_MULTIBOOT_HEADER_MAGIC + X86_MULTIBOOT_HEADER_FLAGS)
-
-#ifdef CONFIG_X86_MULTIBOOT_FRAMEBUF
-	.fill	5,4,0				/* (unused exec layout) */
-	.long	0				/* linear graphics mode */
-	.long	CONFIG_X86_MULTIBOOT_FRAMEBUF_X	/* width */
-	.long	CONFIG_X86_MULTIBOOT_FRAMEBUF_Y	/* height */
-	.long	32				/* depth */
-#endif /* CONFIG_X86_MULTIBOOT_FRAMEBUF */
-
-#endif /* CONFIG_X86_MULTIBOOT */
 
 #ifdef CONFIG_SET_GDT
 

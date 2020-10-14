@@ -8,10 +8,10 @@
 #define ZEPHYR_DRIVERS_SENSOR_TMP007_TMP007_H_
 
 #include <device.h>
-#include <gpio.h>
-#include <misc/util.h>
+#include <drivers/gpio.h>
+#include <sys/util.h>
 
-#define TMP007_I2C_ADDRESS		CONFIG_TMP007_I2C_ADDR
+#define TMP007_I2C_ADDRESS		DT_INST_0_TI_TMP007_BASE_ADDRESS
 
 #define TMP007_REG_CONFIG		0x02
 #define TMP007_ALERT_EN_BIT		BIT(8)

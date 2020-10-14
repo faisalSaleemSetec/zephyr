@@ -5,17 +5,15 @@
  */
 
 #include <device.h>
-#include <i2c.h>
-#include <misc/__assert.h>
-#include <misc/util.h>
+#include <drivers/i2c.h>
+#include <sys/__assert.h>
+#include <sys/util.h>
 #include <kernel.h>
-#include <sensor.h>
-
+#include <drivers/sensor.h>
+#include <logging/log.h>
 #include "hts221.h"
 
-#define LOG_LEVEL CONFIG_SENSOR_LOG_LEVEL
-#include <logging/log.h>
-LOG_MODULE_DECLARE(HTS221);
+LOG_MODULE_DECLARE(HTS221, CONFIG_SENSOR_LOG_LEVEL);
 
 int hts221_trigger_set(struct device *dev,
 			const struct sensor_trigger *trig,
@@ -136,7 +134,7 @@ int hts221_init_interrupt(struct device *dev)
 			CONFIG_HTS221_THREAD_STACK_SIZE,
 			(k_thread_entry_t)hts221_thread, dev,
 			0, NULL, K_PRIO_COOP(CONFIG_HTS221_THREAD_PRIORITY),
-			0, 0);
+			0, K_NO_WAIT);
 #elif defined(CONFIG_HTS221_TRIGGER_GLOBAL_THREAD)
 	drv_data->work.handler = hts221_work_cb;
 	drv_data->dev = dev;

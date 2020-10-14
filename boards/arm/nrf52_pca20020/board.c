@@ -5,8 +5,8 @@
  */
 
 #include <init.h>
-#include <gpio.h>
-#include <misc/printk.h>
+#include <drivers/gpio.h>
+#include <sys/printk.h>
 
 #define VDD_PWR_CTRL_GPIO_PIN 30
 #define CCS_VDD_PWR_CTRL_GPIO_PIN 10
@@ -30,7 +30,7 @@ static int pwr_ctrl_init(struct device *dev)
 	gpio_pin_configure(gpio, cfg->pin, GPIO_DIR_OUT);
 	gpio_pin_write(gpio, cfg->pin, 1);
 
-	k_sleep(1); /* Wait for the rail to come up and stabilize */
+	k_sleep(K_MSEC(1)); /* Wait for the rail to come up and stabilize */
 
 	return 0;
 }

@@ -6,15 +6,15 @@
  */
 
 #include "display_ili9340.h"
-#include <display.h>
+#include <drivers/display.h>
 
 #define LOG_LEVEL CONFIG_DISPLAY_LOG_LEVEL
 #include <logging/log.h>
 LOG_MODULE_REGISTER(display_ili9340);
 
-#include <gpio.h>
-#include <misc/byteorder.h>
-#include <spi.h>
+#include <drivers/gpio.h>
+#include <sys/byteorder.h>
+#include <drivers/spi.h>
 #include <string.h>
 
 struct ili9340_data {
@@ -24,7 +24,7 @@ struct ili9340_data {
 	struct device *command_data_gpio;
 	struct device *spi_dev;
 	struct spi_config spi_config;
-#ifdef DT_INST_0_ILITEK_ILI9340_CS_GPIO_CONTROLLER
+#ifdef DT_INST_0_ILITEK_ILI9340_CS_GPIOS_CONTROLLER
 	struct spi_cs_control cs_ctrl;
 #endif
 };
@@ -42,7 +42,7 @@ struct ili9340_data {
 static void ili9340_exit_sleep(struct ili9340_data *data)
 {
 	ili9340_transmit(data, ILI9340_CMD_EXIT_SLEEP, NULL, 0);
-	k_sleep(120);
+	k_sleep(K_MSEC(120));
 }
 
 static int ili9340_init(struct device *dev)
@@ -61,10 +61,10 @@ static int ili9340_init(struct device *dev)
 	data->spi_config.operation = SPI_OP_MODE_MASTER | SPI_WORD_SET(8);
 	data->spi_config.slave = DT_INST_0_ILITEK_ILI9340_BASE_ADDRESS;
 
-#ifdef DT_INST_0_ILITEK_ILI9340_CS_GPIO_CONTROLLER
+#ifdef DT_INST_0_ILITEK_ILI9340_CS_GPIOS_CONTROLLER
 	data->cs_ctrl.gpio_dev =
-		device_get_binding(DT_INST_0_ILITEK_ILI9340_CS_GPIO_CONTROLLER);
-	data->cs_ctrl.gpio_pin = DT_INST_0_ILITEK_ILI9340_CS_GPIO_PIN;
+		device_get_binding(DT_INST_0_ILITEK_ILI9340_CS_GPIOS_CONTROLLER);
+	data->cs_ctrl.gpio_pin = DT_INST_0_ILITEK_ILI9340_CS_GPIOS_PIN;
 	data->cs_ctrl.delay = 0U;
 	data->spi_config.cs = &(data->cs_ctrl);
 #else
@@ -96,11 +96,11 @@ static int ili9340_init(struct device *dev)
 #ifdef DT_INST_0_ILITEK_ILI9340_RESET_GPIOS_CONTROLLER
 	LOG_DBG("Resetting display driver");
 	gpio_pin_write(data->reset_gpio, DT_INST_0_ILITEK_ILI9340_RESET_GPIOS_PIN, 1);
-	k_sleep(1);
+	k_sleep(K_MSEC(1));
 	gpio_pin_write(data->reset_gpio, DT_INST_0_ILITEK_ILI9340_RESET_GPIOS_PIN, 0);
-	k_sleep(1);
+	k_sleep(K_MSEC(1));
 	gpio_pin_write(data->reset_gpio, DT_INST_0_ILITEK_ILI9340_RESET_GPIOS_PIN, 1);
-	k_sleep(5);
+	k_sleep(K_MSEC(5));
 #endif
 
 	LOG_DBG("Initializing LCD");

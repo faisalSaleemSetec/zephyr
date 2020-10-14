@@ -168,7 +168,28 @@ void mqtt_client_init(struct mqtt_client *client)
 
 	client->protocol_version = MQTT_VERSION_3_1_1;
 	client->clean_session = 1U;
+	client->keepalive = MQTT_KEEPALIVE;
 }
+
+#if defined(CONFIG_SOCKS)
+int mqtt_client_set_proxy(struct mqtt_client *client,
+			  struct sockaddr *proxy_addr,
+			  socklen_t addrlen)
+{
+	if (IS_ENABLED(CONFIG_SOCKS)) {
+		if (!client || !proxy_addr) {
+			return -EINVAL;
+		}
+
+		client->transport.proxy.addrlen = addrlen;
+		memcpy(&client->transport.proxy.addr, proxy_addr, addrlen);
+
+		return 0;
+	}
+
+	return -ENOTSUP;
+}
+#endif
 
 int mqtt_connect(struct mqtt_client *client)
 {
@@ -562,8 +583,8 @@ int mqtt_live(struct mqtt_client *client)
 		elapsed_time = mqtt_elapsed_time_in_ms_get(
 					client->internal.last_activity);
 
-		if ((MQTT_KEEPALIVE > 0) &&
-		    (elapsed_time >= (MQTT_KEEPALIVE * 1000))) {
+		if ((client->keepalive > 0) &&
+		    (elapsed_time >= (client->keepalive * 1000))) {
 			(void)mqtt_ping(client);
 		}
 	}
@@ -668,4 +689,3 @@ int mqtt_readall_publish_payload(struct mqtt_client *client, u8_t *buffer,
 
 	return 0;
 }
-

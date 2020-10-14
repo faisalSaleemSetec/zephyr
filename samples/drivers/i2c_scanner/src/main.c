@@ -6,9 +6,9 @@
 
 #include <errno.h>
 #include <zephyr.h>
-#include <misc/printk.h>
+#include <sys/printk.h>
 #include <device.h>
-#include <i2c.h>
+#include <drivers/i2c.h>
 
 #ifdef ARDUINO_I2C_LABEL
 #define I2C_DEV ARDUINO_I2C_LABEL
@@ -23,12 +23,13 @@
 void main(void)
 {
 	struct device *i2c_dev;
+	u8_t cnt = 0;
 
 	printk("Starting i2c scanner...\n");
 
 	i2c_dev = device_get_binding(I2C_DEV);
 	if (!i2c_dev) {
-		printk("I2C: Device driver not found.\n");
+		printk("I2C: Device driver %s not found.\n", I2C_DEV);
 		return;
 	}
 
@@ -43,6 +44,9 @@ void main(void)
 
 		if (i2c_transfer(i2c_dev, &msgs[0], 1, i) == 0) {
 			printk("0x%2x FOUND\n", i);
+			++cnt;
 		}
 	}
+	printk("%u devices found on %s\n", cnt, I2C_DEV);
+
 }

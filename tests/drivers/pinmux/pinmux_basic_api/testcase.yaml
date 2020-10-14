@@ -1,6 +1,6 @@
 tests:
-  peripheral.pinmux:
-    platform_whitelist: quark_se_c1000_devboard
+  drivers.pinmux:
     tags: drivers
     harness: loopback
-    depends_on: pinmux
+    filter: dt_alias_exists("gpio-0") or dt_alias_exists("gpio-1")
+    depends_on: gpio
